@@ -62,9 +62,9 @@ transform =  ApplyTransformToKey(
 # get transformed video
 v = transform(video_data)
 inputs = v["video"]
-inputs = [i.to(device)[None, ...] for i in inputs]
+inputs = inputs.to("cpu")
 
-# TODO: revise this part
+# TODO: revise this part to get weights rather than prediction
 # ---------------------------------------------------------------------
 # Pass the input clip through the model
 preds = model(inputs[None, ...])
