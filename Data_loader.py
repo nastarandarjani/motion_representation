@@ -6,7 +6,6 @@
 
 import torch
 import torchvision.transforms as transforms
-from torchvision.models.video import r3d_18
 from torchvision.io import read_video
 from torch.utils.data import DataLoader, TensorDataset
 import os
@@ -23,11 +22,14 @@ from pytorchvideo.transforms import (
     ShortSideScale,
     UniformTemporalSubsample
 )
+import json
+import urllib
 
 # model = r3d_18(pretrained=True)
 # Choose the `slowfast_r50` model 
-model = torch.hub.load('facebookresearch/pytorchvideo', 'slowfast_r50', pretrained=True)
-model.eval()  # Set the model to evaluation mode
+model = torch.hub.load('facebookresearch/pytorchvideo', 'slow_r50', pretrained=True)
+model = model.eval()
+model = model.to('cpu')
 
 # TODO: read videos from folder
 video = EncodedVideo.from_path('/content/human_2.mp4')
@@ -66,6 +68,20 @@ inputs = inputs.to("cpu")
 
 # TODO: revise this part to get weights rather than prediction
 # ---------------------------------------------------------------------
+# get category label name
+json_url = "https://dl.fbaipublicfiles.com/pyslowfast/dataset/class_names/kinetics_classnames.json"
+json_filename = "kinetics_classnames.json"
+try: urllib.URLopener().retrieve(json_url, json_filename)
+except: urllib.request.urlretrieve(json_url, json_filename)
+
+with open(json_filename, "r") as f:
+    kinetics_classnames = json.load(f)
+
+# Create an id to label name mapping
+kinetics_id_to_classname = {}
+for k, v in kinetics_classnames.items():
+    kinetics_id_to_classname[v] = str(k).replace('"', "")
+    
 # Pass the input clip through the model
 preds = model(inputs[None, ...])
 
