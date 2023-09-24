@@ -7,7 +7,7 @@ from pytorchvideo.transforms import (
 )
 from torchvision.io import write_video
 
-def process_video(input_folder, target_fps=30, clip_duration=3):
+def preprocess_video(input_folder, target_fps=30, clip_duration=3):
     """
     Process videos in the input folder and save them with prefix "preprocessed_" in the same folder with adjusted FPS and duration.
 
@@ -46,4 +46,4 @@ def process_video(input_folder, target_fps=30, clip_duration=3):
 
 
 folder_path = '/test videos'
-process_video(folder_path)
+preprocess_video(folder_path)
