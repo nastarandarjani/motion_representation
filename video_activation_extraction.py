@@ -226,7 +226,7 @@ def get_activation(model, video_inputs, layer, isLabel = False):
     if isLabel:
         get_top_k_predicted_labels(preds)
 
-    return np.squeeze(Layer_input[0].detach().numpy()), 
+    return Layer_input[0].detach().numpy().reshape(-1)
 
 if __name__ == "__main__":
     # Specify the desired model name here ('slowfast_r50' or 'x3d_s')
