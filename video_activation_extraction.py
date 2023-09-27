@@ -15,7 +15,7 @@ import torch
 import av
 import json
 import urllib
-import pickle
+import torch.nn as nn
 from tqdm import tqdm
 from pytorchvideo.data.encoded_video import EncodedVideo
 from torchvision.transforms import Compose, Lambda
@@ -193,6 +193,26 @@ def get_top_k_predicted_labels(preds, k=5):
 
     print(f"Top 5 predicted labels for {video_file}: {', '.join(pred_class_names)}")
 
+def get_relu_and_batchnorm_modules(model):
+    """
+    Get the names of ReLU and BatchNorm3d modules within a PyTorch model.
+
+    Args:
+        model (nn.Module): The PyTorch model from which to extract module names.
+
+    Returns:
+        List[str]: A list of module names that are instances of nn.ReLU or nn.BatchNorm3d.
+                   These names can be used to access or manipulate these modules in the model.
+    """
+    modules = []
+
+    # Iterate through all modules in the model
+    for module_name, module in model.named_modules():
+        if isinstance(module, nn.ReLU) or isinstance(module, nn.BatchNorm3d):
+            modules.append(module_name)
+
+    return modules
+
 def get_activation(model, video_inputs, layer, isLabel = False):
     """
     Get the activation from a specified layer of a pre-trained model.
@@ -208,8 +228,8 @@ def get_activation(model, video_inputs, layer, isLabel = False):
     global model_name
 
     def hook_func(model, input, output):
-        nonlocal Layer_input
-        Layer_input = input
+        nonlocal Layer_output
+        Layer_output = output
 
     # Register the forward hook on the desired layer
     hook = layer.register_forward_hook(hook_func)
@@ -219,56 +239,52 @@ def get_activation(model, video_inputs, layer, isLabel = False):
     elif model_name == 'x3d_s':
         video_inputs = video_inputs.to('cpu')[None, ...]
 
-    Layer_input = None
+    Layer_output = None
     preds = model(video_inputs)
     hook.remove()
 
     if isLabel:
         get_top_k_predicted_labels(preds)
 
-    return Layer_input[0].detach().numpy().reshape(-1)
+    return Layer_output[0].detach().numpy().reshape(-1)
 
 if __name__ == "__main__":
     # Specify the desired model name here ('slowfast_r50' or 'x3d_s')
     model_name = 'x3d_s'
 
-    # Create a dictionary to map model names to their respective layers
-    model_to_layer = {
-        'slowfast_r50': 'blocks.5.pool.0',
-        'x3d_s': 'blocks.5'
-    }
-
     folder_path = '../test videos/'
 
     # List the files in the folder with the "processed_" prefix
     processed_videos = [file for file in os.listdir(folder_path) if file.startswith('processed_')]
+    
+    # Remove "processed_" and ".mp4" and save in a NumPy array
+    video_names = [os.path.splitext(file)[0].replace('processed_', '') for file in processed_videos]
+    video_names = np.array(video_names)
+    np.savez('/result/video_names.npz', video_names)
 
     # Load the pre-trained model
     model = load_pretrained_model(model_name)
 
-    # Retrieve the corresponding layer from which to extract activations
-    layer_path = model_to_layer.get(model_name)
-    layer = model
-    for attr in layer_path.split('.'):
-        layer = getattr(layer, attr)
-    
-    # Create a dictionary to store activations
-    activations_dict = {}
+    # Retrieve corresponding layers from which to extract activations
+    modules = get_relu_and_batchnorm_modules(model)
 
-    for video_file in tqdm(processed_videos, desc="Processing Videos"):
-        video_path = os.path.join(folder_path, video_file)
-        transformed_video = process_video(model_name, video_path)
+    for model_layer in modules:
+        layer = model
+        for attr in model_layer.split('.'):
+            layer = getattr(layer, attr)
 
-        # Get activation from the specified layer
-        activation = get_activation(model, transformed_video, layer)
+        # Create a list to store activations
+        activations = []
 
-        # Store the activation in the dictionary with the video file name as the key
-        # Remove "processed_" and ".mp4"
-        video_name = video_file.replace('processed_', '').replace('.mp4', '')
-        activations_dict[video_name] = activation
+        for index, video_file in enumerate(tqdm(processed_videos)):
+            video_path = os.path.join(folder_path, video_file)
+            transformed_video = process_video(model_name, video_path)
 
-    # Save the activations dictionary to a pickle file
-    activations_file_path = f'/result/activations_{model_name}.pkl'
-    with open(activations_file_path, 'wb') as activations_file:
-        pickle.dump(activations_dict, activations_file)
+            # Get activation from the specified layer
+            activations.append(get_activation(model, transformed_video, layer))
 
+        activations = np.array(activations)
+
+        # Save the filename and activations array
+        activations_file_path = f'/result/{model_name}/{model_layer}.npz'
+        np.savez(activations_file_path, activations)
