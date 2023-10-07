@@ -39,8 +39,7 @@ if __name__ == "__main__":
     # Specify the correlation types in RDM ('pearson' or 'spearman')
     cor_type = 'pearson'
 
-    # Load video names from a file
-    video_names = np.load('../result/video_names.npz')['arr_0']
+    video_names = ['ball', 'human', 'mammal', 'penswi', 'reptile', 'tool']
 
     # Construct the path to the pickle file containing correlation data
     folder_path = f'../result/{cor_type}_RDM_{model_name}.pkl'
