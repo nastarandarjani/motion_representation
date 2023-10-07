@@ -300,6 +300,10 @@ if __name__ == "__main__":
             activations.extend(batch_activations)
 
         activations = np.vstack(activations)
+        
+        # average across category
+        activations = activations.reshape(6, 6, -1)
+        activations = np.mean(activations, axis = 1)
 
         pearson_RDM[model_layer] = 1 - np.corrcoef(activations)
         cor, _ = spearmanr(activations, axis=1)
