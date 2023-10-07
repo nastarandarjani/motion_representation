@@ -1,5 +1,5 @@
 # This script loads a pre-trained PyTorchVideo model, processes video clips, extracts
-# activations from a specified layer, and saves the activations in a pickle file.
+# activations from all BatchNormalization and Relu layer, and saves the RDM in a pickle file.
 
 # transformations are based on :
 #    slowfast: https://pytorch.org/hub/facebookresearch_pytorchvideo_slowfast/
@@ -15,8 +15,10 @@ import torch
 import av
 import json
 import urllib
-import torch.nn as nn
+import pickle
 from tqdm import tqdm
+import torch.nn as nn
+from scipy.stats import spearmanr
 from pytorchvideo.data.encoded_video import EncodedVideo
 from torchvision.transforms import Compose, Lambda
 from torchvision.transforms._transforms_video import (
@@ -44,7 +46,7 @@ def load_pretrained_model(model_name):
     """
     model = torch.hub.load('facebookresearch/pytorchvideo', model_name, pretrained=True)
     model = model.eval()
-    model = model.to('cpu')
+    model = model.to('cuda')
     return model
 
 def apply_video_transform(model_name, video_data):
@@ -226,7 +228,6 @@ def get_activation(model, video_inputs, layer, isLabel = False):
         numpy.ndarray: Activation values as a NumPy array.
     """
     global model_name
-
     def hook_func(model, input, output):
         nonlocal Layer_output
         Layer_output = output
@@ -235,28 +236,29 @@ def get_activation(model, video_inputs, layer, isLabel = False):
     hook = layer.register_forward_hook(hook_func)
 
     if model_name == 'slowfast_r50':
-        video_inputs = [i.to('cpu')[None, ...] for i in video_inputs]
+        input = [torch.cat([video_input[i] for video_input in video_inputs], dim=0) for i in range(len(video_inputs[0]))]
     elif model_name == 'x3d_s':
-        video_inputs = video_inputs.to('cpu')[None, ...]
+        input = torch.cat(video_inputs, dim=0)
 
     Layer_output = None
-    preds = model(video_inputs)
+    preds = model(input)
     hook.remove()
 
     if isLabel:
         get_top_k_predicted_labels(preds)
 
-    return Layer_output[0].detach().numpy().reshape(-1)
+    activations_batch = Layer_output.detach().cpu().numpy().reshape(len(Layer_output), -1)
+    return activations_batch
 
 if __name__ == "__main__":
     # Specify the desired model name here ('slowfast_r50' or 'x3d_s')
-    model_name = 'x3d_s'
+    model_name = 'slowfast_r50'
 
     folder_path = '../test videos/'
 
     # List the files in the folder with the "processed_" prefix
-    processed_videos = [file for file in os.listdir(folder_path) if file.startswith('processed_')]
-    
+    processed_videos = [file for file in sorted(os.listdir(folder_path)) if file.startswith('processed_')]
+
     # Remove "processed_" and ".mp4" and save in a NumPy array
     video_names = [os.path.splitext(file)[0].replace('processed_', '') for file in processed_videos]
     video_names = np.array(video_names)
@@ -268,23 +270,46 @@ if __name__ == "__main__":
     # Retrieve corresponding layers from which to extract activations
     modules = get_relu_and_batchnorm_modules(model)
 
-    for model_layer in modules:
+    # Transform and store all videos
+    transformed_videos = []
+    for video_file in tqdm(processed_videos, desc='load data'):
+        video_path = os.path.join(folder_path, video_file)
+        transformed_video = process_video(model_name, video_path)
+        transformed_videos.append(transformed_video)
+
+    pearson_RDM = {}
+    spearman_RDM = {}
+    batch_size = int(36/4)
+    for model_layer in tqdm(modules):
         layer = model
         for attr in model_layer.split('.'):
             layer = getattr(layer, attr)
 
-        # Create a list to store activations
         activations = []
+        # Process videos in batches
+        for block in range(0, len(transformed_videos), batch_size):
+            batch_videos = transformed_videos[block:block+batch_size]
 
-        for index, video_file in enumerate(tqdm(processed_videos)):
-            video_path = os.path.join(folder_path, video_file)
-            transformed_video = process_video(model_name, video_path)
+            if model_name == 'slowfast_r50':
+                batch_videos = [[j.to('cuda')[None, ...] for j in i] for i in batch_videos]
+            elif model_name == 'x3d_s':
+                batch_videos = [i.to('cuda')[None, ...] for i in batch_videos]
 
-            # Get activation from the specified layer
-            activations.append(get_activation(model, transformed_video, layer))
+            batch_activations = get_activation(model, batch_videos, layer)
 
-        activations = np.array(activations)
+            activations.extend(batch_activations)
 
-        # Save the filename and activations array
-        activations_file_path = f'/result/{model_name}/{model_layer}.npz'
-        np.savez(activations_file_path, activations)
+        activations = np.vstack(activations)
+
+        pearson_RDM[model_layer] = 1 - np.corrcoef(activations)
+        cor, _ = spearmanr(activations, axis=1)
+        spearman_RDM[model_layer] = 1 - cor
+        
+    # Save the RDM dictionary to a pickle file
+    file_path = f'/result/pearson_RDM_{model_name}.pkl'
+    with open(file_path, 'wb') as File:
+        pickle.dump(pearson_RDM, File)
+
+    file_path = f'/result//spearman_RDM_{model_name}.pkl'
+    with open(file_path, 'wb') as File:
+        pickle.dump(spearman_RDM, File)
