@@ -27,12 +27,17 @@ def load_MRI(filepath, hemisphere):
     data = scipy.io.loadmat(filepath)[key]
 
     # Separate dynamic and static RDM
-    dynamic_RDM = data[:6, :6, :]
-    static_RDM = data[6:, :6, :]
+    temp = data[:6, :, :]
+    dynamic_RDM = temp[:, :6, :]
+    temp = data[6:, :, :]
+    static_RDM = temp[:, 6:, :]
 
-    # Swap rows to the desired form
-    dynamic_RDM = dynamic_RDM[[5, 0, 1, 4, 2, 3], :, :]
-    static_RDM = static_RDM[[5, 0, 1, 4, 2, 3], :, :]
+    # swap rows to the desired form
+    temp = dynamic_RDM[[5, 0, 1, 4, 2, 3], :, :]
+    dynamic_RDM = temp[:, [5, 0, 1, 4, 2, 3], :]
+
+    temp = static_RDM[[5, 0, 1, 4, 2, 3], :, :]
+    static_RDM = temp[:, [5, 0, 1, 4, 2, 3], :]
 
     return dynamic_RDM, static_RDM
 
@@ -86,7 +91,7 @@ ROIList = ['V1', 'pFS', 'LO', 'EBA', 'MTSTS', 'infIPS', 'SMG']
 hemispheres = ['all', 'rh', 'lh']
 
 # Loop through subjects
-for sub in range(6, 18):
+for sub in range(2, 18):
     if sub == 8:
         continue
     subject = f'S{sub:02d}'
