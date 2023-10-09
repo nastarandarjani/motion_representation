@@ -276,7 +276,8 @@ if __name__ == "__main__":
         video_path = os.path.join(folder_path, video_file)
         transformed_video = process_video(model_name, video_path)
         transformed_videos.append(transformed_video)
-
+    
+    euclidean_RDM = {}
     pearson_RDM = {}
     spearman_RDM = {}
     batch_size = int(36/4)
