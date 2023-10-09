@@ -36,8 +36,8 @@ def CDF_(x):
 if __name__ == "__main__":
     # Specify the desired model name here ('slowfast_r50' or 'x3d_s')
     model_name = 'slowfast_r50'
-    # Specify the correlation types in RDM ('pearson' or 'spearman')
-    cor_type = 'pearson'
+    # Specify the correlation types in RDM ('pearson', 'spearman' or 'euclidean')
+    cor_type = 'euclidean'
 
     video_names = ['ball', 'human', 'mammal', 'penswi', 'reptile', 'tool']
 
