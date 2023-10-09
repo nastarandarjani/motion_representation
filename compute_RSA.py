@@ -137,19 +137,19 @@ for sub in range(2, 18):
                     RSA = calculate_RSA_layers(model_RDM, dynamic_RDM)
                     
                     # Construct the save folder path
-                    save_folder = f'/content/drive/My Drive/motion_representation/result/{subject}/{model_name}/{cor}'
+                    save_folder = f'/content/drive/My Drive/motion_representation/result/{model_name}/{cor}/{region}'
 
                     # Create the save folder if it doesn't exist
                     if not os.path.exists(save_folder):
                         os.makedirs(save_folder)
 
                     # Save dynamic RSA dictionary to a pickle file
-                    with open(f'{save_folder}/{region}_{hem}_dynamic_RSA.pkl', 'wb') as File:
+                    with open(f'{save_folder}/{subject}_{hem}_dynamic_RSA.pkl', 'wb') as File:
                         pickle.dump(RSA, File)
 
                     # Generate static RSA values
                     RSA = calculate_RSA_layers(model_RDM, static_RDM)
 
                     # Save static RSA dictionary to a pickle file
-                    with open(f'{save_folder}/{region}_{hem}_static_RSA.pkl', 'wb') as File:
+                    with open(f'{save_folder}/{subject}_{hem}_static_RSA.pkl', 'wb') as File:
                         pickle.dump(RSA, File)
