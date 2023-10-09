@@ -306,8 +306,12 @@ if __name__ == "__main__":
         activations = np.mean(activations, axis = 1)
 
         pearson_RDM[model_layer] = 1 - np.corrcoef(activations)
+        
         cor, _ = spearmanr(activations, axis=1)
         spearman_RDM[model_layer] = 1 - cor
+
+        pairwise_differences = activations[:, np.newaxis, :] - activations[np.newaxis, :, :]
+        euclidean_RDM[model_layer] = np.linalg.norm(pairwise_differences, axis=2)
         
     # Save the RDM dictionary to a pickle file
     file_path = f'/result/pearson_RDM_{model_name}.pkl'
@@ -317,3 +321,7 @@ if __name__ == "__main__":
     file_path = f'/result//spearman_RDM_{model_name}.pkl'
     with open(file_path, 'wb') as File:
         pickle.dump(spearman_RDM, File)
+
+    file_path = f'/result/euclidean_RDM_{model_name}.pkl'
+    with open(file_path, 'wb') as File:
+        pickle.dump(euclidean_RDM, File)
