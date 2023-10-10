@@ -112,27 +112,32 @@ for sub in range(2, 18):
     for region in ROIList:
         for hem in tqdm(hemispheres, desc=f'computing for subject {sub} in region {region}'):
             # Construct the file path for MRI data
-            filepath = f'/content/drive/My Drive/motion_representation/fMRI/{subject}/GCSS_noOverlap_{region}_{hem}.mat'
+            filepath = f'/fMRI/{subject}/GCSS_noOverlap_{region}_{hem}.mat'
             dynamic_tstat, static_tstat = load_MRI(filepath, hem)
 
-            for model_name in models:
-                for cor in correlation_types:
+            for cor in correlation_types:                
+                # calculate RDM from tstat
+                dynamic_RDM = calculate_RDM(dynamic_tstat, cor)
+                static_RDM = calculate_RDM(static_tstat, cor)
+
+                # save RDM files
+                RDM_folder = f'/result/fMRI RDM/{cor}/{region}'
+
+                # Create the save folder if it doesn't exist
+                if not os.path.exists(RDM_folder):
+                    os.makedirs(RDM_folder)
+
+                with open(f'{RDM_folder}/{subject}_RDM_{hem}_dynamic.pkl', 'wb') as File:
+                    pickle.dump(dynamic_RDM, File)
+                with open(f'{RDM_folder}/{subject}_RDM_{hem}_static.pkl', 'wb') as File:
+                    pickle.dump(static_RDM, File)
+
+                for model_name in models:
                     # Construct the file path for model RDM
                     model_path = f'/result/model RDM/{cor}_RDM_{model_name}.pkl'
 
                     with open(model_path, 'rb') as pickle_file:
                         model_RDM = pickle.load(pickle_file)
-
-                    # calculate RDM from tstat
-                    dynamic_RDM = calculate_RDM(dynamic_tstat, cor)
-                    static_RDM = calculate_RDM(static_tstat, cor)
-
-                    # save RDM files
-                    RDM_folder = f'/result/fMRI RDM/{subject}_{cor}_RDM_{region}'
-                    with open(f'{RDM_folder}_dynamic.pkl', 'wb') as File:
-                        pickle.dump(dynamic_RDM, File)
-                    with open(f'{RDM_folder}_static.pkl', 'wb') as File:
-                        pickle.dump(static_RDM, File)
 
                     # Generate dynamic RSA values
                     RSA = calculate_RSA_layers(model_RDM, dynamic_RDM)
