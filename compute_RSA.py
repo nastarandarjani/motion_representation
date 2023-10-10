@@ -92,7 +92,7 @@ def calculate_RSA_layers(RDM1, RDM2):
     return RSA
 
 # List of models
-models = ['slowfast_r50', 'x3d_s']
+models = ['slowfast_r50', 'x3d_m']
 # List of correlation types in RDM
 correlation_types = ['pearson', 'spearman', 'euclidean']
 
@@ -111,13 +111,13 @@ for sub in range(2, 18):
     for region in ROIList:
         for hem in tqdm(hemispheres, desc=f'computing for subject {sub} in region {region}'):
             # Construct the file path for MRI data
-            filepath = f'/content/drive/My Drive/motion_representation/fMRI/{subject}/GCSS_noOverlap_{region}_{hem}.mat'
+            filepath = f'/fMRI/{subject}/GCSS_noOverlap_{region}_{hem}.mat'
             dynamic_tstat, static_tstat = load_MRI(filepath, hem)
 
             for model_name in models:
                 for cor in correlation_types:
                     # Construct the file path for model RDM
-                    model_path = f'/content/drive/My Drive/motion_representation/{cor}_RDM_{model_name}.pkl'
+                    model_path = f'/result/{cor}_RDM_{model_name}.pkl'
 
                     with open(model_path, 'rb') as pickle_file:
                         model_RDM = pickle.load(pickle_file)
@@ -127,7 +127,7 @@ for sub in range(2, 18):
                     static_RDM = calculate_RDM(static_tstat, cor)
 
                     # save RDM files
-                    RDM_folder = f'/content/drive/My Drive/motion_representation/{cor}_RDM'
+                    RDM_folder = f'/result/fMRI RDM/{subject}_{cor}_RDM_{region}'
                     with open(f'{RDM_folder}_dynamic.pkl', 'wb') as File:
                         pickle.dump(dynamic_RDM, File)
                     with open(f'{RDM_folder}_static.pkl', 'wb') as File:
@@ -137,7 +137,7 @@ for sub in range(2, 18):
                     RSA = calculate_RSA_layers(model_RDM, dynamic_RDM)
                     
                     # Construct the save folder path
-                    save_folder = f'/content/drive/My Drive/motion_representation/result/{model_name}/{cor}/{region}'
+                    save_folder = f'/result/{model_name}/{cor}/{region}'
 
                     # Create the save folder if it doesn't exist
                     if not os.path.exists(save_folder):
