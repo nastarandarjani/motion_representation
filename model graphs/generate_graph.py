@@ -15,8 +15,8 @@ from motion_representation.video_activation_extraction import (
     process_video
 )
 
-# Specify the model name ('slowfast_r50' or 'x3d_s')
-model_name = 'x3d_s'
+# Specify the model name ('slowfast_r50' or 'x3d_m')
+model_name = 'x3d_m'
 
 # Load the pre-trained model
 model = load_pretrained_model(model_name)
@@ -30,7 +30,7 @@ transformed_video = process_video(model_name, video)
 # Convert the video to GPU and add a batch dimension
 if model_name == 'slowfast_r50':
     video_inputs = [i.to('cuda')[None, ...] for i in transformed_video]
-elif model_name == 'x3d_s':
+else:
     video_inputs = transformed_video.to('cuda')[None, ...]
 
 # Forward pass to compute the computation graph
