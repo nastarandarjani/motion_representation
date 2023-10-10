@@ -1,5 +1,10 @@
+# This script processes MRI data and performs RSA (Representational Similarity Analysis) for multiple subjects,
+# regions of interest, hemispheres, models, and correlation types. It loads MRI data, calculates RDMs for dynamic
+# and static t-statistics, and computes RSA values between model RDMs and MRI RDMs.
+
 import numpy as np
 from scipy.stats import kendalltau
+from scipy.stats import spearmanr
 import scipy.io
 from tqdm import tqdm
 import os
@@ -26,7 +31,7 @@ def load_MRI(filepath, hemisphere):
     key = f'condData{hemisphere}'
     data = scipy.io.loadmat(filepath)[key]
 
-    # Separate dynamic and static RDM 
+    # Separate dynamic and static RDM
     dynamic_tstat = np.mean(data[:6, :, :], axis = 1)
     static_tstat = np.mean(data[6:, :, :], axis = 1)
 
@@ -91,14 +96,10 @@ def calculate_RSA_layers(RDM1, RDM2):
         RSA[layer_name] = calculate_RSA(RDM, RDM2)
     return RSA
 
-# List of models
+# List of models, correlation types, regions of interest, and hemispheres
 models = ['slowfast_r50', 'x3d_m']
-# List of correlation types in RDM
 correlation_types = ['pearson', 'spearman', 'euclidean']
-
-# List of regions of interest
 ROIList = ['V1', 'pFS', 'LO', 'EBA', 'MTSTS', 'infIPS', 'SMG']
-# Specify the hemisphere
 hemispheres = ['all', 'rh', 'lh']
 
 # Loop through subjects
@@ -111,13 +112,13 @@ for sub in range(2, 18):
     for region in ROIList:
         for hem in tqdm(hemispheres, desc=f'computing for subject {sub} in region {region}'):
             # Construct the file path for MRI data
-            filepath = f'/fMRI/{subject}/GCSS_noOverlap_{region}_{hem}.mat'
+            filepath = f'/content/drive/My Drive/motion_representation/fMRI/{subject}/GCSS_noOverlap_{region}_{hem}.mat'
             dynamic_tstat, static_tstat = load_MRI(filepath, hem)
 
             for model_name in models:
                 for cor in correlation_types:
                     # Construct the file path for model RDM
-                    model_path = f'/result/{cor}_RDM_{model_name}.pkl'
+                    model_path = f'/result/model RDM/{cor}_RDM_{model_name}.pkl'
 
                     with open(model_path, 'rb') as pickle_file:
                         model_RDM = pickle.load(pickle_file)
@@ -135,9 +136,9 @@ for sub in range(2, 18):
 
                     # Generate dynamic RSA values
                     RSA = calculate_RSA_layers(model_RDM, dynamic_RDM)
-                    
+
                     # Construct the save folder path
-                    save_folder = f'/result/{model_name}/{cor}/{region}'
+                    save_folder = f'/result/RSA/{model_name}/{cor}/{region}'
 
                     # Create the save folder if it doesn't exist
                     if not os.path.exists(save_folder):
