@@ -107,14 +107,14 @@ def apply_video_transform(model_name, video_data):
                 ]
             ),
         )
-    elif model_name ==  'x3d_s':
+    elif model_name ==  'x3d_m':
         mean = [0.45, 0.45, 0.45]
         std = [0.225, 0.225, 0.225]
         frames_per_second = 30
-        side_size = 182
-        crop_size = 182
-        num_frames = 13
-        sampling_rate = 6
+        side_size = 256
+        crop_size = 256
+        num_frames = 16
+        sampling_rate = 5
 
         transform =  ApplyTransformToKey(
             key="video",
@@ -237,7 +237,7 @@ def get_activation(model, video_inputs, layer, isLabel = False):
 
     if model_name == 'slowfast_r50':
         input = [torch.cat([video_input[i] for video_input in video_inputs], dim=0) for i in range(len(video_inputs[0]))]
-    elif model_name == 'x3d_s':
+    else:
         input = torch.cat(video_inputs, dim=0)
 
     Layer_output = None
@@ -251,7 +251,7 @@ def get_activation(model, video_inputs, layer, isLabel = False):
     return activations_batch
 
 if __name__ == "__main__":
-    # Specify the desired model name here ('slowfast_r50' or 'x3d_s')
+    # Specify the desired model name here ('slowfast_r50' or 'x3d_m')
     model_name = 'slowfast_r50'
 
     folder_path = '../test videos/'
