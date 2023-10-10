@@ -15,7 +15,7 @@ model_name = 'x3d_m'
 model = load_pretrained_model(model_name)
 
 # Process the video using
-file_path = '/content/drive/My Drive/motion_representation/stimuli/processed_ball_1.mp4'
+file_path = '/stimuli/processed_ball_1.mp4'
 transformed_video = process_video(model_name, file_path)
 
 if model_name == 'slowfast_r50':
