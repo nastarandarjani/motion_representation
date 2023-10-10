@@ -1,14 +1,8 @@
-# This script loads a pre-trained PyTorchVideo model, processes video clips, extracts
-# activations from all BatchNormalization and Relu layer, and saves the RDM in a pickle file.
-
-# transformations are based on :
-#    slowfast: https://pytorch.org/hub/facebookresearch_pytorchvideo_slowfast/
-#    x3d: https://pytorch.org/hub/facebookresearch_pytorchvideo_x3d/
+# transformations are based on https://pytorch.org/hub/facebookresearch_pytorchvideo_slowfast/
 
 # Necessary installation
 # pip install av
 # pip install pytorchvideo
-# pip install tqdm
 
 import numpy as np
 import torch
@@ -250,19 +244,15 @@ def get_activation(model, video_inputs, layer, isLabel = False):
     activations_batch = Layer_output.detach().cpu().numpy().reshape(len(Layer_output), -1)
     return activations_batch
 
+
 if __name__ == "__main__":
     # Specify the desired model name here ('slowfast_r50' or 'x3d_m')
     model_name = 'slowfast_r50'
 
-    folder_path = '../test videos/'
+    folder_path = 'stimuli'
 
     # List the files in the folder with the "processed_" prefix
     processed_videos = [file for file in sorted(os.listdir(folder_path)) if file.startswith('processed_')]
-
-    # Remove "processed_" and ".mp4" and save in a NumPy array
-    video_names = [os.path.splitext(file)[0].replace('processed_', '') for file in processed_videos]
-    video_names = np.array(video_names)
-    np.savez('/result/video_names.npz', video_names)
 
     # Load the pre-trained model
     model = load_pretrained_model(model_name)
@@ -276,7 +266,7 @@ if __name__ == "__main__":
         video_path = os.path.join(folder_path, video_file)
         transformed_video = process_video(model_name, video_path)
         transformed_videos.append(transformed_video)
-    
+
     euclidean_RDM = {}
     pearson_RDM = {}
     spearman_RDM = {}
@@ -293,7 +283,7 @@ if __name__ == "__main__":
 
             if model_name == 'slowfast_r50':
                 batch_videos = [[j.to('cuda')[None, ...] for j in i] for i in batch_videos]
-            elif model_name == 'x3d_s':
+            else:
                 batch_videos = [i.to('cuda')[None, ...] for i in batch_videos]
 
             batch_activations = get_activation(model, batch_videos, layer)
@@ -307,22 +297,22 @@ if __name__ == "__main__":
         activations = np.mean(activations, axis = 1)
 
         pearson_RDM[model_layer] = 1 - np.corrcoef(activations)
-        
+
         cor, _ = spearmanr(activations, axis=1)
         spearman_RDM[model_layer] = 1 - cor
 
         pairwise_differences = activations[:, np.newaxis, :] - activations[np.newaxis, :, :]
         euclidean_RDM[model_layer] = np.linalg.norm(pairwise_differences, axis=2)
-        
+
     # Save the RDM dictionary to a pickle file
-    file_path = f'/result/pearson_RDM_{model_name}.pkl'
+    file_path = f'/result/model RDM/pearson_RDM_{model_name}.pkl'
     with open(file_path, 'wb') as File:
         pickle.dump(pearson_RDM, File)
 
-    file_path = f'/result//spearman_RDM_{model_name}.pkl'
+    file_path = f'/result/model RDM/spearman_RDM_{model_name}.pkl'
     with open(file_path, 'wb') as File:
         pickle.dump(spearman_RDM, File)
 
-    file_path = f'/result/euclidean_RDM_{model_name}.pkl'
+    file_path = f'/result/model RDM/euclidean_RDM_{model_name}.pkl'
     with open(file_path, 'wb') as File:
         pickle.dump(euclidean_RDM, File)
