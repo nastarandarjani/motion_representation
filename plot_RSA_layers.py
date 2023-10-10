@@ -80,6 +80,6 @@ for cond in condition:
         plt.savefig(f'/plot/{model_name}_{cor}_{cond}.png')
         plt.close()
 
-        # Save the max layers data
-        save_folder = f'/result/max layer'
-        np.savez(f'{save_folder}/layer_{model_name}_{cor}_{cond}.npz', max_layer)
+    # Save the max layers data
+    save_folder = f'/result/max layer'
+    np.savez(f'{save_folder}/layer_{model_name}_{cond}.npz', max_layer)
