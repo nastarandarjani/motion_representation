@@ -68,7 +68,7 @@ for model_name in models:
         fig.supylabel('Correlation (Kendal Tau)')
         fig.supxlabel('Layer')
         plt.tight_layout()
-        plt.savefig(f'/result/plot/{model_name}_{cor}.png')
+        plt.savefig(f'/result/plot/{model_name}_{cor}_{condition}.png')
         plt.close()
 
     save_folder = f'/result'
