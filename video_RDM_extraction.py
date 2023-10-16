@@ -43,13 +43,13 @@ def load_pretrained_model(model_name):
     model = model.to('cuda')
     return model
 
-def apply_video_transform(model_name, video_data):
+def apply_video_transform(model_name, video):
     """
     Apply transformations to video data according to model.
 
     Args:
         model_name (str): Pre-trained model's name.
-        video_data (dict): Video data dictionary.
+        video : Video class.
 
     Returns:
         dict: Transformed video data.
@@ -122,7 +122,9 @@ def apply_video_transform(model_name, video_data):
                 ]
             ),
         )
-
+    
+    end_sec = (num_frames * sampling_rate)/30
+    video_data = video.get_clip(start_sec=0, end_sec=end_sec)
     transformed_video = transform(video_data)
     return transformed_video
 
@@ -139,10 +141,9 @@ def process_video(model_name, video_path):
     """
     # Read video from a file
     video = EncodedVideo.from_path(video_path)
-    video_data = video.get_clip(start_sec=0, end_sec=9)
 
     # Apply video transformations
-    transformed_video_data = apply_video_transform(model_name, video_data)["video"]
+    transformed_video_data = apply_video_transform(model_name, video)["video"]
 
     return transformed_video_data
 
