@@ -1,3 +1,5 @@
+# plot RDM
+
 import numpy as np
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.gridspec import SubplotSpec
@@ -38,14 +40,14 @@ ROIList = ['V1', 'pFS', 'LO', 'EBA', 'MTSTS', 'infIPS', 'SMG']
 condition = ['slow', 'fast', 'fusion', 'rmslow', '']
 
 # Specify the path where results will be saved
-folder = '/content/drive/My Drive/motion_representation/result'
+folder = '/result'
 
 # Define a list of names
-name = ['ball', 'human', 'mammal', 'penswi', 'reptile', 'tool']
+name = ['human', 'mammal', 'reptile', 'tool', 'penswi', 'ball']
 
 # Loop through different models
 for model_name in models:
-    for cond in tqdm(condition):
+    for cond in condition:
         # Set the condition based on the model
         if model_name != 'slowfast_r50' and cond != '':
             continue
@@ -56,7 +58,7 @@ for model_name in models:
         # Loop through different correlation types
         for c, cor in enumerate(cor_types):
             # Specify the path to save PDF plots
-            save_pdf_path = f'/content/drive/My Drive/motion_representation/plot/RDM_{model_name}_{cor}_{cond}.pdf'
+            save_pdf_path = f'/plot/RDM_{model_name}_{cor}_{cond}.pdf'
             pdf_pages = PdfPages(save_pdf_path)
 
             # Loop through regions of interest
@@ -74,13 +76,16 @@ for model_name in models:
                         if sub == 8:
                             continue
                         subject = f'S{sub:02d}'
-                        RDM_folder = f'/content/drive/My Drive/motion_representation/result/fMRI RDM/{cor}/{region}'
+                        RDM_folder = f'/result/fMRI RDM/{cor}/{region}'
 
                         # Load fMRI RDM data from file
                         with open(f'{RDM_folder}/{subject}_RDM_all_{status}.pkl', 'rb') as File:
                             fMRI_RDM.append(pickle.load(File))
 
                     fMRI_RDM = np.mean(fMRI_RDM, axis=0)
+
+                    temp = fMRI_RDM[[1, 2, 4, 5, 3, 0], :]
+                    fMRI_RDM = temp[:, [1, 2, 4, 5, 3, 0]]
 
                     # plot average fMRI RDM
                     im = ax.imshow(CDF_(fMRI_RDM))
@@ -90,7 +95,7 @@ for model_name in models:
                     plt.colorbar(im, ax=ax)
 
                     ax = axes[s, 1]
-                    model_folder = f'/content/drive/My Drive/motion_representation/result/model RDM'
+                    model_folder = f'/result/model RDM'
 
                     # Load model RDM data from file
                     with open(f'{model_folder}/{cor}_RDM_{model_name}.pkl', 'rb') as File:
