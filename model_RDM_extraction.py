@@ -25,6 +25,7 @@ from pytorchvideo.transforms import (
     UniformTemporalSubsample
 )
 import os
+from DorsalNet.dorsalnet import DorsalNet
 
 # Define functions
 
@@ -38,22 +39,30 @@ def load_pretrained_model(model_name):
     Returns:
         torch.nn.Module: Loaded pre-trained model.
     """
-    model = torch.hub.load('facebookresearch/pytorchvideo', model_name, pretrained=True)
+    if model_name == 'dorsalnet':
+        network = 'airsim_dorsalnet_batch2_model.ckpt-3174400-2021-02-12 02-03-29.666899.pt'
+
+        checkpoint = torch.load(f'DorsalNet/{network}')
+
+        subnet_dict = {}
+        for k, v in checkpoint.items():
+            if k.startswith("fully_connected"):
+                continue
+            if k.startswith("subnet.") or k.startswith("module."):
+                subnet_dict[k[7:]] = v
+            else:
+                subnet_dict[k] = v
+
+        model = DorsalNet(False, 32)
+        model.load_state_dict(subnet_dict)
+    else:
+        model = torch.hub.load('facebookresearch/pytorchvideo', model_name, pretrained=True)
+
     model = model.eval()
     model = model.to('cuda')
     return model
 
 def apply_video_transform(model_name, video):
-    """
-    Apply transformations to video data according to model.
-
-    Args:
-        model_name (str): Pre-trained model's name.
-        video : Video class.
-
-    Returns:
-        dict: Transformed video data.
-    """
 
     if model_name == 'slowfast_r50':
         side_size = 256
@@ -101,10 +110,9 @@ def apply_video_transform(model_name, video):
                 ]
             ),
         )
-    elif model_name ==  'x3d_m':
+    elif model_name == 'x3d_m':
         mean = [0.45, 0.45, 0.45]
         std = [0.225, 0.225, 0.225]
-        frames_per_second = 30
         side_size = 256
         crop_size = 256
         num_frames = 16
@@ -122,7 +130,52 @@ def apply_video_transform(model_name, video):
                 ]
             ),
         )
-    
+    elif model_name == 'slow_r50':
+        side_size = 256
+        mean = [0.45, 0.45, 0.45]
+        std = [0.225, 0.225, 0.225]
+        crop_size = 256
+        num_frames = 8
+        sampling_rate = 8
+        frames_per_second = 30
+
+        transform =  ApplyTransformToKey(
+            key="video",
+            transform=Compose(
+                [
+                    UniformTemporalSubsample(num_frames),
+                    Lambda(lambda x: x/255.0),
+                    NormalizeVideo(mean, std),
+                    ShortSideScale(
+                        size=side_size
+                    ),
+                    CenterCropVideo(crop_size=(crop_size, crop_size))
+                ]
+            ),
+        )
+    elif model_name == 'dorsalnet':
+        side_size = 256
+        crop_size = 256
+        mean = [0.48, 0.48, 0.48]
+        std = [0.29, 0.29, 0.29]
+        num_frames = 30
+        sampling_rate = 3
+        transform =  ApplyTransformToKey(
+            key="video",
+            transform=Compose(
+                [
+                    UniformTemporalSubsample(num_frames),
+                    Lambda(lambda x: x/255.0),
+                    NormalizeVideo(mean, std),
+                    ShortSideScale(
+                        size=side_size
+                    ),
+                    CenterCropVideo(crop_size=(crop_size, crop_size))
+                ]
+            ),
+        )
+
+
     end_sec = (num_frames * sampling_rate)/30
     video_data = video.get_clip(start_sec=0, end_sec=end_sec)
     transformed_video = transform(video_data)
@@ -190,22 +243,22 @@ def get_top_k_predicted_labels(preds, k=5):
 
     print(f"Top 5 predicted labels for {video_file}: {', '.join(pred_class_names)}")
 
-def get_relu_and_batchnorm_modules(model):
+def get_relu_modules(model):
     """
-    Get the names of ReLU and BatchNorm3d modules within a PyTorch model.
+    Get the names of ReLU modules within a PyTorch model.
 
     Args:
         model (nn.Module): The PyTorch model from which to extract module names.
 
     Returns:
-        List[str]: A list of module names that are instances of nn.ReLU or nn.BatchNorm3d.
+        List[str]: A list of module names that are instances of nn.ReLU.
                    These names can be used to access or manipulate these modules in the model.
     """
     modules = []
 
     # Iterate through all modules in the model
     for module_name, module in model.named_modules():
-        if isinstance(module, nn.ReLU) or isinstance(module, nn.BatchNorm3d):
+        if isinstance(module, nn.ReLU):
             modules.append(module_name)
 
     return modules
@@ -247,24 +300,24 @@ def get_activation(model, video_inputs, layer, isLabel = False):
 
 
 if __name__ == "__main__":
-    # Specify the desired model name here ('slowfast_r50' or 'x3d_m')
+    # Specify the desired model name ('slowfast_r50', 'x3d_m', 'slow_r50' or 'dorsalnet')
     model_name = 'slowfast_r50'
+    status = 'static' # 'dynamic'
 
-    folder_path = 'stimuli'
-
-    # List the files in the folder with the "processed_" prefix
-    processed_videos = [file for file in sorted(os.listdir(folder_path)) if file.startswith('processed_')]
+    # List the files in the folder with the proper prefix
+    prefix = 'processed_' if status == 'dynamic' else 'img_'
+    processed_videos = [file for file in sorted(os.listdir('stimuli')) if file.startswith(prefix)]
 
     # Load the pre-trained model
     model = load_pretrained_model(model_name)
 
     # Retrieve corresponding layers from which to extract activations
-    modules = get_relu_and_batchnorm_modules(model)
+    modules = get_relu_modules(model)
 
     # Transform and store all videos
     transformed_videos = []
     for video_file in tqdm(processed_videos, desc='load data'):
-        video_path = os.path.join(folder_path, video_file)
+        video_path = os.path.join('stimuli', video_file)
         transformed_video = process_video(model_name, video_path)
         transformed_videos.append(transformed_video)
 
@@ -306,14 +359,14 @@ if __name__ == "__main__":
         euclidean_RDM[model_layer] = np.linalg.norm(pairwise_differences, axis=2)
 
     # Save the RDM dictionary to a pickle file
-    file_path = f'/result/model RDM/pearson_RDM_{model_name}.pkl'
+    file_path = f'result/model RDM/{status}/pearson_RDM_{model_name}.pkl'
     with open(file_path, 'wb') as File:
         pickle.dump(pearson_RDM, File)
 
-    file_path = f'/result/model RDM/spearman_RDM_{model_name}.pkl'
+    file_path = f'result/model RDM/{status}/spearman_RDM_{model_name}.pkl'
     with open(file_path, 'wb') as File:
         pickle.dump(spearman_RDM, File)
 
-    file_path = f'/result/model RDM/euclidean_RDM_{model_name}.pkl'
+    file_path = f'result/model RDM/{status}/euclidean_RDM_{model_name}.pkl'
     with open(file_path, 'wb') as File:
         pickle.dump(euclidean_RDM, File)
