@@ -80,27 +80,37 @@ def calculate_RSA(RDM1, RDM2):
     correlation, _ = kendalltau(RDM1.flatten(), RDM2.flatten())
     return correlation
 
-def calculate_RSA_layers(RDM1, RDM2):
-    """
-    Calculate RSA values for a dictionary of RDMs with different layers.
-
-    Parameters:
-    - RDM1 (dict): Dictionary of RDMs.
-    - RDM2 (numpy.ndarray): Second RDM from MRI recording.
-
-    Returns:
-    - RSA (dict): Dictionary of RSA values for each layer.
-    """
+def calculate_RSA_layers(RDM1, RDM2, mode, ind):
     RSA = {}
     for layer_name, RDM in RDM1.items():
+        RDM = filter_RDM(RDM, mode)[ind]
         RSA[layer_name] = calculate_RSA(RDM, RDM2)
     return RSA
 
+def filter_RDM(RDM, mode):
+    temp = RDM[[1, 2, 4, 5, 3, 0], :]
+    RDM = temp[:, [1, 2, 4, 5, 3, 0]]
+
+    if mode == '':
+        return (RDM, )
+
+    elif mode == 'anim':
+        animate = RDM[0:2, 0:2]
+        inanimate = RDM[3:6, 3:6]
+        return (animate, inanimate)
+
+    elif mode == 'stim':
+        RDM_tuple = tuple(RDM[i, i] for i in range(6))
+        return RDM_tuple
+
+
 # List of models, correlation types, regions of interest, and hemispheres
-models = ['slowfast_r50', 'x3d_m']
+models = ['x3d_m', 'slowfast_r50', 'slow_r50', 'dorsalnet']
 correlation_types = ['pearson', 'spearman', 'euclidean']
 ROIList = ['V1', 'pFS', 'LO', 'EBA', 'MTSTS', 'infIPS', 'SMG']
 hemispheres = ['all', 'rh', 'lh']
+
+names = [[''], ['_animate', '_inanimate'], ['_ball', '_human', '_mammal', '_reptile', '_penswi', '_tool']]
 
 # Loop through subjects
 for sub in range(2, 18):
@@ -111,51 +121,65 @@ for sub in range(2, 18):
     # Loop through regions of interest, hemispheres, models, and correlation types
     for region in ROIList:
         for hem in tqdm(hemispheres, desc=f'computing for subject {sub} in region {region}'):
-            # Construct the file path for MRI data
-            filepath = f'/fMRI/{subject}/GCSS_noOverlap_{region}_{hem}.mat'
-            dynamic_tstat, static_tstat = load_MRI(filepath, hem)
 
-            for cor in correlation_types:                
-                # calculate RDM from tstat
-                dynamic_RDM = calculate_RDM(dynamic_tstat, cor)
-                static_RDM = calculate_RDM(static_tstat, cor)
-
+            for cor in correlation_types:
                 # save RDM files
-                RDM_folder = f'/result/fMRI RDM/{cor}/{region}'
+                RDM_folder = f'result/fMRI RDM/{cor}/{region}'
 
-                # Create the save folder if it doesn't exist
-                if not os.path.exists(RDM_folder):
-                    os.makedirs(RDM_folder)
+                # Create the MRI RDM if it doesn't exist
+                if not os.path.exists(f'{RDM_folder}/{subject}_RDM_{hem}_dynamic.pkl'):
+                    if not os.path.exists(RDM_folder):
+                        os.makedirs(RDM_folder)
 
-                with open(f'{RDM_folder}/{subject}_RDM_{hem}_dynamic.pkl', 'wb') as File:
-                    pickle.dump(dynamic_RDM, File)
-                with open(f'{RDM_folder}/{subject}_RDM_{hem}_static.pkl', 'wb') as File:
-                    pickle.dump(static_RDM, File)
+                    # Construct the file path for MRI data
+                    filepath = f'fMRI/{subject}/GCSS_noOverlap_{region}_{hem}.mat'
+                    dynamic_tstat, static_tstat = load_MRI(filepath, hem)
+
+                    # calculate RDM from tstat
+                    dynamic_RDM = calculate_RDM(dynamic_tstat, cor)
+                    static_RDM = calculate_RDM(static_tstat, cor)
+
+                    with open(f'{RDM_folder}/{subject}_RDM_{hem}_dynamic.pkl', 'wb') as File:
+                        pickle.dump(dynamic_RDM, File)
+                    with open(f'{RDM_folder}/{subject}_RDM_{hem}_static.pkl', 'wb') as File:
+                        pickle.dump(static_RDM, File)
+                else:
+                    with open(f'{RDM_folder}/{subject}_RDM_{hem}_dynamic.pkl', 'rb') as File:
+                        dynamic_RDM = pickle.load(File)
+                    with open(f'{RDM_folder}/{subject}_RDM_{hem}_static.pkl', 'rb') as File:
+                        static_RDM = pickle.load(File)
 
                 for model_name in models:
-                    # Construct the file path for model RDM
-                    model_path = f'/result/model RDM/{cor}_RDM_{model_name}.pkl'
+                        # Construct the save folder path
+                        save_folder = f'result/RSA/{model_name}/{cor}/{region}'
 
-                    with open(model_path, 'rb') as pickle_file:
-                        model_RDM = pickle.load(pickle_file)
+                        # Create the save folder if it doesn't exist
+                        if not os.path.exists(save_folder):
+                            os.makedirs(save_folder)
 
-                    # Generate dynamic RSA values
-                    RSA = calculate_RSA_layers(model_RDM, dynamic_RDM)
+                        for m, mode in enumerate(['', 'anim']):
+                            dyn_RDM = filter_RDM(dynamic_RDM, mode)
+                            stat_RDM = filter_RDM(static_RDM, mode)
 
-                    # Construct the save folder path
-                    save_folder = f'/result/RSA/{model_name}/{cor}/{region}'
+                            model_path = f'result/model RDM/dynamic/{cor}_RDM_{model_name}.pkl'
+                            with open(model_path, 'rb') as pickle_file:
+                                model_RDM_dyn = pickle.load(pickle_file)
 
-                    # Create the save folder if it doesn't exist
-                    if not os.path.exists(save_folder):
-                        os.makedirs(save_folder)
+                            model_path = f'result/model RDM/static/{cor}_RDM_{model_name}.pkl'
+                            with open(model_path, 'rb') as pickle_file:
+                                model_RDM_stat = pickle.load(pickle_file)
 
-                    # Save dynamic RSA dictionary to a pickle file
-                    with open(f'{save_folder}/{subject}_{hem}_dynamic_RSA.pkl', 'wb') as File:
-                        pickle.dump(RSA, File)
+                            for ind in range(len(dyn_RDM)):
+                                # Generate dynamic RSA values
+                                RSA = calculate_RSA_layers(model_RDM_dyn, dyn_RDM[ind], mode, ind)
 
-                    # Generate static RSA values
-                    RSA = calculate_RSA_layers(model_RDM, static_RDM)
+                                # Save dynamic RSA dictionary to a pickle file
+                                with open(f'{save_folder}/{subject}_{hem}_dynamic_RSA{names[m][ind]}.pkl', 'wb') as File:
+                                    pickle.dump(RSA, File)
 
-                    # Save static RSA dictionary to a pickle file
-                    with open(f'{save_folder}/{subject}_{hem}_static_RSA.pkl', 'wb') as File:
-                        pickle.dump(RSA, File)
+                                # Generate static RSA values
+                                RSA = calculate_RSA_layers(model_RDM_stat, stat_RDM[ind], mode, ind)
+
+                                # Save static RSA dictionary to a pickle file
+                                with open(f'{save_folder}/{subject}_{hem}_static_RSA{names[m][ind]}.pkl', 'wb') as File:
+                                    pickle.dump(RSA, File)
