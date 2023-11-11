@@ -29,7 +29,7 @@ from DorsalNet.dorsalnet import DorsalNet
 
 # Define functions
 
-def load_pretrained_model(model_name):
+def load_model(model_name, pretrained=True):
     """
     Load a pre-trained PyTorchVideo model.
 
@@ -54,9 +54,10 @@ def load_pretrained_model(model_name):
                 subnet_dict[k] = v
 
         model = DorsalNet(False, 32)
-        model.load_state_dict(subnet_dict)
+        if pretrained:
+            model.load_state_dict(subnet_dict)
     else:
-        model = torch.hub.load('facebookresearch/pytorchvideo', model_name, pretrained=True)
+        model = torch.hub.load('facebookresearch/pytorchvideo', model_name, pretrained=pretrained)
 
     model = model.eval()
     model = model.to('cuda')
@@ -301,15 +302,16 @@ def get_activation(model, video_inputs, layer, isLabel = False):
 
 if __name__ == "__main__":
     # Specify the desired model name ('slowfast_r50', 'x3d_m', 'slow_r50' or 'dorsalnet')
-    model_name = 'slowfast_r50'
+    model_name = 'dorsalnet'
     status = 'static' # 'dynamic'
+    pretrained = False
 
     # List the files in the folder with the proper prefix
     prefix = 'processed_' if status == 'dynamic' else 'img_'
     processed_videos = [file for file in sorted(os.listdir('stimuli')) if file.startswith(prefix)]
 
     # Load the pre-trained model
-    model = load_pretrained_model(model_name)
+    model = load_model(model_name, pretrained = pretrained)
 
     # Retrieve corresponding layers from which to extract activations
     modules = get_relu_modules(model)
@@ -358,15 +360,16 @@ if __name__ == "__main__":
         pairwise_differences = activations[:, np.newaxis, :] - activations[np.newaxis, :, :]
         euclidean_RDM[model_layer] = np.linalg.norm(pairwise_differences, axis=2)
 
+    random_initialized = 'random/' if not pretrained else ''
     # Save the RDM dictionary to a pickle file
-    file_path = f'result/model RDM/{status}/pearson_RDM_{model_name}.pkl'
+    file_path = f'result/model RDM/{random_initialized}{status}/pearson_RDM_{model_name}.pkl'
     with open(file_path, 'wb') as File:
         pickle.dump(pearson_RDM, File)
 
-    file_path = f'result/model RDM/{status}/spearman_RDM_{model_name}.pkl'
+    file_path = f'result/model RDM/{random_initialized}{status}/spearman_RDM_{model_name}.pkl'
     with open(file_path, 'wb') as File:
         pickle.dump(spearman_RDM, File)
 
-    file_path = f'result/model RDM/{status}/euclidean_RDM_{model_name}.pkl'
+    file_path = f'result/model RDM/{random_initialized}{status}/euclidean_RDM_{model_name}.pkl'
     with open(file_path, 'wb') as File:
         pickle.dump(euclidean_RDM, File)
