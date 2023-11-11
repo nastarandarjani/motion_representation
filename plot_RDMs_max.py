@@ -1,4 +1,5 @@
 # plot RDM
+matplotlib.rcParams.update(matplotlib.rcParamsDefault)
 
 import numpy as np
 from matplotlib.backends.backend_pdf import PdfPages
@@ -32,15 +33,12 @@ def CDF_(x):
     return data
 
 # Define models, correlation types, regions of interest, and condition
-models = ['x3d_m', 'slowfast_r50']
+models = ['x3d_m', 'slowfast_r50', 'slow_r50', 'dorsalnet']
 cor_types = ['pearson', 'spearman', 'euclidean']
-ROIList = ['V1', 'pFS', 'LO', 'EBA', 'MTSTS', 'infIPS', 'SMG']
+ROIList = ['V1', 'pFS', 'LO', 'EBA', 'MTSTS', 'infIPS', 'SMG', 'behavior']
 
 # Specify the condition ('slow', 'fast', 'rmslow', 'fusion', or '')
 condition = ['slow', 'fast', 'fusion', 'rmslow', '']
-
-# Specify the path where results will be saved
-folder = '/result'
 
 # Define a list of names
 name = ['human', 'mammal', 'reptile', 'tool', 'penswi', 'ball']
@@ -53,12 +51,12 @@ for model_name in models:
             continue
 
         # Load the maximum layer data for the current model and condition
-        max_layer = np.load(f'{folder}/max layer/layer_{model_name}_{cond}.npz', allow_pickle=True)['arr_0']
+        max_layer = np.load(f'result/max layer/RSA/layer_{model_name}_{cond}.npz', allow_pickle=True)['arr_0']
 
         # Loop through different correlation types
         for c, cor in enumerate(cor_types):
             # Specify the path to save PDF plots
-            save_pdf_path = f'/plot/RDM_{model_name}_{cor}_{cond}.pdf'
+            save_pdf_path = f'plot/RDM_{model_name}_{cor}_{cond}.pdf'
             pdf_pages = PdfPages(save_pdf_path)
 
             # Loop through regions of interest
@@ -70,19 +68,23 @@ for model_name in models:
                 for s, status in enumerate(['dynamic', 'static']):
                     ax = axes[s, 0]
                     fMRI_RDM = []
+                    RDM_folder = f'result/fMRI RDM/{cor}/{region}'
 
-                    # Loop through subjects
-                    for sub in range(2, 18):
-                        if sub == 8:
-                            continue
-                        subject = f'S{sub:02d}'
-                        RDM_folder = f'/result/fMRI RDM/{cor}/{region}'
+                    if region == 'behavior':
+                        with open(f'{RDM_folder}/_RDM__{status}.pkl', 'rb') as File:
+                            fMRI_RDM = (pickle.load(File))
+                    else:
+                        # Loop through subjects
+                        for sub in range(2, 18):
+                            if sub == 8:
+                                continue
+                            subject = f'S{sub:02d}'
 
-                        # Load fMRI RDM data from file
-                        with open(f'{RDM_folder}/{subject}_RDM_all_{status}.pkl', 'rb') as File:
-                            fMRI_RDM.append(pickle.load(File))
+                            # Load fMRI RDM data from file
+                            with open(f'{RDM_folder}/{subject}_RDM_all_{status}.pkl', 'rb') as File:
+                                fMRI_RDM.append(pickle.load(File))
 
-                    fMRI_RDM = np.mean(fMRI_RDM, axis=0)
+                        fMRI_RDM = np.mean(fMRI_RDM, axis=0)
 
                     temp = fMRI_RDM[[1, 2, 4, 5, 3, 0], :]
                     fMRI_RDM = temp[:, [1, 2, 4, 5, 3, 0]]
@@ -95,20 +97,23 @@ for model_name in models:
                     plt.colorbar(im, ax=ax)
 
                     ax = axes[s, 1]
-                    model_folder = f'/result/model RDM'
+                    model_folder = f'result/model RDM'
 
                     # Load model RDM data from file
-                    with open(f'{model_folder}/{cor}_RDM_{model_name}.pkl', 'rb') as File:
+                    with open(f'{model_folder}/{status}/{cor}_RDM_{model_name}.pkl', 'rb') as File:
                         model_RDM = pickle.load(File)
 
                     for layer_name, RDM in model_RDM.items():
-                        if layer_name == max_layer[c, r, s]:
+                        if layer_name == max_layer[c, r]:
                             layer_RDM = RDM
+
+                    temp = layer_RDM[[1, 2, 4, 5, 3, 0], :]
+                    layer_RDM = temp[:, [1, 2, 4, 5, 3, 0]]
 
                     im = ax.imshow(CDF_(layer_RDM))
                     ax.set_xticks(range(6), name, rotation=90)
                     ax.set_yticks(range(6), name)
-                    ax.set_title(f'model {status}\n{max_layer[c, r, s]}')
+                    ax.set_title(f'model {status}\n{max_layer[c, r]}')
                     plt.colorbar(im, ax=ax)
 
                 fig.suptitle(region)
