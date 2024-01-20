@@ -25,6 +25,7 @@ from pytorchvideo.transforms import (
     UniformTemporalSubsample
 )
 import os
+from sklearn.metrics.pairwise import euclidean_distances
 from DorsalNet.dorsalnet import DorsalNet
 
 # Define functions
@@ -56,6 +57,8 @@ def load_model(model_name, pretrained=True):
         model = DorsalNet(False, 32)
         if pretrained:
             model.load_state_dict(subnet_dict)
+    elif model_name == 'slowfast_4x16_r50':
+        model = torch.load('https://dl.fbaipublicfiles.com/pytorchvideo/model_zoo/kinetics/SLOWFAST_4x16_R50.pyth')
     else:
         model = torch.hub.load('facebookresearch/pytorchvideo', model_name, pretrained=pretrained)
 
@@ -65,16 +68,39 @@ def load_model(model_name, pretrained=True):
 
 def apply_video_transform(model_name, video):
 
-    if model_name == 'slowfast_r50':
-        side_size = 256
-        mean = [0.45, 0.45, 0.45]
-        std = [0.225, 0.225, 0.225]
-        crop_size = 256
-        num_frames = 32
-        sampling_rate = 2
-        slowfast_alpha = 4
-        num_clips = 10
-        num_crops = 3
+    if 'slowfast' in model_name:
+        if model_name == 'slowfast_r50' or model_name == 'slowfast_r101':
+            side_size = 256
+            mean = [0.45, 0.45, 0.45]
+            std = [0.225, 0.225, 0.225]
+            crop_size = 256
+            num_frames = 32
+            sampling_rate = 2
+            slowfast_alpha = 4
+            num_clips = 10
+            num_crops = 3
+
+        elif model_name == 'slowfast_16x8_r101_50_50':
+            side_size = 256
+            mean = [0.45, 0.45, 0.45]
+            std = [0.225, 0.225, 0.225]
+            crop_size = 256
+            num_frames = 64
+            sampling_rate = 2
+            slowfast_alpha = 4
+            num_clips = 10
+            num_crops = 3
+
+        elif model_name == 'slowfast_4x16_r50':
+            side_size = 256
+            mean = [0.45, 0.45, 0.45]
+            std = [0.225, 0.225, 0.225]
+            crop_size = 256
+            num_frames = 32
+            sampling_rate = 2
+            slowfast_alpha = 8
+            num_clips = 10
+            num_crops = 3
 
         class PackPathway(torch.nn.Module):
             """
@@ -128,29 +154,6 @@ def apply_video_transform(model_name, video):
                     NormalizeVideo(mean, std),
                     ShortSideScale(size=side_size),
                     CenterCropVideo(crop_size)
-                ]
-            ),
-        )
-    elif model_name == 'slow_r50':
-        side_size = 256
-        mean = [0.45, 0.45, 0.45]
-        std = [0.225, 0.225, 0.225]
-        crop_size = 256
-        num_frames = 8
-        sampling_rate = 8
-        frames_per_second = 30
-
-        transform =  ApplyTransformToKey(
-            key="video",
-            transform=Compose(
-                [
-                    UniformTemporalSubsample(num_frames),
-                    Lambda(lambda x: x/255.0),
-                    NormalizeVideo(mean, std),
-                    ShortSideScale(
-                        size=side_size
-                    ),
-                    CenterCropVideo(crop_size=(crop_size, crop_size))
                 ]
             ),
         )
@@ -284,7 +287,7 @@ def get_activation(model, video_inputs, layer, isLabel = False):
     # Register the forward hook on the desired layer
     hook = layer.register_forward_hook(hook_func)
 
-    if model_name == 'slowfast_r50':
+    if 'slowfast' in model_name:
         input = [torch.cat([video_input[i] for video_input in video_inputs], dim=0) for i in range(len(video_inputs[0]))]
     else:
         input = torch.cat(video_inputs, dim=0)
@@ -302,9 +305,14 @@ def get_activation(model, video_inputs, layer, isLabel = False):
 
 if __name__ == "__main__":
     # Specify the desired model name ('slowfast_r50', 'x3d_m', 'slow_r50' or 'dorsalnet')
-    model_name = 'dorsalnet'
-    status = 'static' # 'dynamic'
-    pretrained = False
+    model_name = 'slowfast_4x16_r50'
+    status = 'dynamic' # 'dynamic'
+    pretrained = True
+
+    isslow = False
+    if model_name == 'slow_r50':
+        isslow = True
+        model_name = 'slowfast_r50'
 
     # List the files in the folder with the proper prefix
     prefix = 'processed_' if status == 'dynamic' else 'img_'
@@ -312,6 +320,17 @@ if __name__ == "__main__":
 
     # Load the pre-trained model
     model = load_model(model_name, pretrained = pretrained)
+
+    if isslow:
+        for module_name, module in model.named_modules():
+            if 'branch1' in module_name and 'multipathway_blocks.0' in module_name:
+                for param in module.parameters():
+                    param.requires_grad = False
+                    if isinstance(module, torch.nn.Conv3d):
+                        module.weight.data.fill_(0)
+                    elif isinstance(module, torch.nn.BatchNorm3d):
+                        module.weight.data.fill_(0)
+                        module.bias.data.fill_(0)
 
     # Retrieve corresponding layers from which to extract activations
     modules = get_relu_modules(model)
@@ -326,7 +345,7 @@ if __name__ == "__main__":
     euclidean_RDM = {}
     pearson_RDM = {}
     spearman_RDM = {}
-    batch_size = int(36/4)
+    batch_size = int(36/1)
     for model_layer in tqdm(modules):
         layer = model
         for attr in model_layer.split('.'):
@@ -337,16 +356,18 @@ if __name__ == "__main__":
         for block in range(0, len(transformed_videos), batch_size):
             batch_videos = transformed_videos[block:block+batch_size]
 
-            if model_name == 'slowfast_r50':
+            if 'slowfast' in model_name:
                 batch_videos = [[j.to('cuda')[None, ...] for j in i] for i in batch_videos]
             else:
                 batch_videos = [i.to('cuda')[None, ...] for i in batch_videos]
 
-            batch_activations = get_activation(model, batch_videos, layer)
+            with torch.no_grad():
+                batch_activations = get_activation(model, batch_videos, layer)
 
             activations.extend(batch_activations)
 
         activations = np.vstack(activations)
+        del batch_videos
 
         # average across category
         activations = activations.reshape(6, 6, -1)
@@ -356,13 +377,20 @@ if __name__ == "__main__":
 
         cor, _ = spearmanr(activations, axis=1)
         spearman_RDM[model_layer] = 1 - cor
+        del cor
 
-        pairwise_differences = activations[:, np.newaxis, :] - activations[np.newaxis, :, :]
-        euclidean_RDM[model_layer] = np.linalg.norm(pairwise_differences, axis=2)
+        euclidean_RDM[model_layer] = euclidean_distances(activations)
+        del activations
+
+    if isslow:
+        model_name = 'slow_r50'
 
     random_initialized = 'random/' if not pretrained else ''
     # Save the RDM dictionary to a pickle file
     file_path = f'result/model RDM/{random_initialized}{status}/pearson_RDM_{model_name}.pkl'
+    print(file_path)
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
     with open(file_path, 'wb') as File:
         pickle.dump(pearson_RDM, File)
 
