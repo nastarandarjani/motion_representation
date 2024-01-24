@@ -91,8 +91,10 @@ def calculate_RSA(RDM1, RDM2):
     Returns:
     - correlation (float): Kendall's Tau correlation between the two RDMs.
     """
+    RDM1 = RDM1[np.triu_indices(RDM1.shape[0], k = 1)]
+    RDM2 = RDM2[np.triu_indices(RDM2.shape[0], k = 1)]
     # Calculate Kendall's Tau correlation between the two RDMs
-    correlation, _ = kendalltau(RDM1.flatten(), RDM2.flatten())
+    correlation, _ = kendalltau(RDM1, RDM2)
     return correlation
 
 def calculate_RSA_layers(RDM1, RDM2, mode, ind):
@@ -110,7 +112,7 @@ def calculate_semcor_layers(RDM1, RDM2, RDM3, mode, ind):
         r12 = calculate_RSA(RDM, RDM2)
         r13 = calculate_RSA(RDM, RDM3)
 
-        cor[layer_name] = (r12 - (r13 * r23)) / math.sqrt(1 - math.pow(r23, 2))
+        cor[layer_name] = (r12 - (r13 * r23)) / (math.sqrt(1 - math.pow(r13, 2)) * math.sqrt(1 - math.pow(r23, 2)))
 
     return cor
 
@@ -136,9 +138,17 @@ models = ['x3d_m', 'slowfast_r50', 'slow_r50', 'dorsalnet']
 correlation_types = ['pearson', 'spearman', 'euclidean']
 ROIList = ['V1', 'pFS', 'LO', 'EBA', 'MTSTS', 'infIPS', 'SMG', 'behavior']
 hemispheres = ['all', 'rh', 'lh']
-
 names = {'_anim' : ['_animate', '_inanimate'], '': ['']}
+israndom = False
+isimagenet = False
 
+
+if isimagenet:
+    models = ['alexnet', 'resnet50', 'densenet121', 'vgg16']
+    israndom = False
+
+random_initialized = 'random/' if israndom else ''
+imagenet = 'imagenet/' if isimagenet else ''
 # Loop through subjects
 for sub in range(2, 18):
     if sub == 8:
@@ -186,42 +196,42 @@ for sub in range(2, 18):
                             static_RDM = pickle.load(File)
 
                 for model_name in models:
-                        # Construct the save folder path
-                        save_folder = f'result/RSA/{model_name}/{cor}/{region}'
+                    # Construct the save folder path
+                    save_folder = f'result/RSA/{imagenet}{random_initialized}{model_name}/{cor}/{region}'
 
-                        # Create the save folder if it doesn't exist
-                        if not os.path.exists(save_folder):
-                            os.makedirs(save_folder)
+                    # Create the save folder if it doesn't exist
+                    if not os.path.exists(save_folder):
+                        os.makedirs(save_folder)
 
-                        for m, (mode, name) in enumerate(names.items()):
-                            dyn_RDM = filter_RDM(dynamic_RDM, mode)
-                            stat_RDM = filter_RDM(static_RDM, mode)
+                    for m, (mode, name) in enumerate(names.items()):
+                        dyn_RDM = filter_RDM(dynamic_RDM, mode)
+                        stat_RDM = filter_RDM(static_RDM, mode)
 
-                            model_path = f'result/model RDM/dynamic/{cor}_RDM_{model_name}.pkl'
-                            with open(model_path, 'rb') as pickle_file:
-                                model_RDM_dyn = pickle.load(pickle_file)
+                        model_path = f'result/model RDM/{imagenet}{random_initialized}dynamic/{cor}_RDM_{model_name}.pkl'
+                        with open(model_path, 'rb') as pickle_file:
+                            model_RDM_dyn = pickle.load(pickle_file)
 
-                            model_path = f'result/model RDM/static/{cor}_RDM_{model_name}.pkl'
-                            with open(model_path, 'rb') as pickle_file:
-                                model_RDM_stat = pickle.load(pickle_file)
+                        model_path = f'result/model RDM/{imagenet}{random_initialized}static/{cor}_RDM_{model_name}.pkl'
+                        with open(model_path, 'rb') as pickle_file:
+                            model_RDM_stat = pickle.load(pickle_file)
 
-                            for ind, nam in enumerate(name):
-                                # Generate dynamic RSA values
-                                RSA = calculate_RSA_layers(model_RDM_dyn, dyn_RDM[ind], mode, ind)
-                                with open(f'{save_folder}/{subject}_{hem}_dynamic_RSA{nam}.pkl', 'wb') as File:
-                                    pickle.dump(RSA, File)
+                        for ind, nam in enumerate(name):
+                            # Generate dynamic RSA values
+                            RSA = calculate_RSA_layers(model_RDM_dyn, dyn_RDM[ind], mode, ind)
+                            with open(f'{save_folder}/{subject}_{hem}_dynamic_RSA{nam}.pkl', 'wb') as File:
+                                pickle.dump(RSA, File)
 
-                                # Generate static RSA values
-                                RSA = calculate_RSA_layers(model_RDM_stat, stat_RDM[ind], mode, ind)
-                                with open(f'{save_folder}/{subject}_{hem}_static_RSA{nam}.pkl', 'wb') as File:
-                                    pickle.dump(RSA, File)
+                            # Generate static RSA values
+                            RSA = calculate_RSA_layers(model_RDM_stat, stat_RDM[ind], mode, ind)
+                            with open(f'{save_folder}/{subject}_{hem}_static_RSA{nam}.pkl', 'wb') as File:
+                                pickle.dump(RSA, File)
 
-                                if mode == '':
-                                    semcor = calculate_semcor_layers(model_RDM_dyn, dyn_RDM[ind], stat_RDM[ind], mode, ind)
-                                    with open(f'{save_folder}/{subject}_{hem}_dynamic_cor{nam}.pkl', 'wb') as File:
-                                        pickle.dump(semcor, File)
+                            if mode == '':
+                                semcor = calculate_semcor_layers(model_RDM_dyn, dyn_RDM[ind], stat_RDM[ind], mode, ind)
+                                with open(f'{save_folder}/{subject}_{hem}_dynamic_cor{nam}.pkl', 'wb') as File:
+                                    pickle.dump(semcor, File)
 
-                                    # Generate semi-partial correlation
-                                    semcor = calculate_semcor_layers(model_RDM_stat, stat_RDM[ind], dyn_RDM[ind], mode, ind)
-                                    with open(f'{save_folder}/{subject}_{hem}_static_cor{nam}.pkl', 'wb') as File:
-                                        pickle.dump(semcor, File)
+                                # Generate semi-partial correlation
+                                semcor = calculate_semcor_layers(model_RDM_stat, stat_RDM[ind], dyn_RDM[ind], mode, ind)
+                                with open(f'{save_folder}/{subject}_{hem}_static_cor{nam}.pkl', 'wb') as File:
+                                    pickle.dump(semcor, File)
