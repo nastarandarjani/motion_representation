@@ -13,6 +13,8 @@ import pickle
 from tqdm import tqdm
 import torch.nn as nn
 from scipy.stats import spearmanr
+from typing import Any
+from pytorchvideo.models.hub import slowfast
 from pytorchvideo.data.encoded_video import EncodedVideo
 from torchvision.transforms import Compose, Lambda
 from torchvision.transforms._transforms_video import (
@@ -58,7 +60,19 @@ def load_model(model_name, pretrained=True):
         if pretrained:
             model.load_state_dict(subnet_dict)
     elif model_name == 'slowfast_4x16_r50':
-        model = torch.load('https://dl.fbaipublicfiles.com/pytorchvideo/model_zoo/kinetics/SLOWFAST_4x16_R50.pyth')
+        def slowfast_4x16_r50(pretrained: bool = False, progress: bool = True, **kwargs: Any,) -> nn.Module:
+            return slowfast._slowfast(
+                pretrained=pretrained,
+                progress=progress,
+                checkpoint_path="https://dl.fbaipublicfiles.com/pytorchvideo/model_zoo/kinetics/SLOWFAST_4x16_R50.pyth",
+                model_depth = 50,
+                slowfast_fusion_conv_kernel_size=(5, 1, 1),
+                slowfast_fusion_conv_stride = (8, 1, 1),
+                head_pool_kernel_sizes=((4, 7, 7), (32, 7, 7)),
+                **kwargs,
+            )
+
+        model = slowfast_4x16_r50(pretrained = True)
     else:
         model = torch.hub.load('facebookresearch/pytorchvideo', model_name, pretrained=pretrained)
 
@@ -158,10 +172,10 @@ def apply_video_transform(model_name, video):
             ),
         )
     elif model_name == 'dorsalnet':
-        side_size = 256
-        crop_size = 256
-        mean = [0.48, 0.48, 0.48]
-        std = [0.29, 0.29, 0.29]
+        side_size = 112
+        crop_size = 112
+        mean = [123.0, 123.0, 123.0]
+        std = [75.0, 75.0, 75.0]
         num_frames = 30
         sampling_rate = 3
         transform =  ApplyTransformToKey(
@@ -169,7 +183,7 @@ def apply_video_transform(model_name, video):
             transform=Compose(
                 [
                     UniformTemporalSubsample(num_frames),
-                    Lambda(lambda x: x/255.0),
+                    # Lambda(lambda x: x/255.0),
                     NormalizeVideo(mean, std),
                     ShortSideScale(
                         size=side_size
@@ -239,11 +253,10 @@ def get_top_k_predicted_labels(preds, k=5):
 
     post_act = torch.nn.Softmax(dim=1)
     preds = post_act(preds)
-    pred_classes = preds.topk(k=k).indices[0]
+    pred_classes = preds.topk(k=1)[1]
 
-    kinetics_classnames = get_labels_name()
-
-    pred_class_names = [kinetics_classnames[int(i)] for i in pred_classes]
+    # Map the predicted classes to the label names
+    pred_class_names = [kinetics_id_to_classname[int(i)] for i in pred_classes]
 
     print(f"Top 5 predicted labels for {video_file}: {', '.join(pred_class_names)}")
 
@@ -305,7 +318,7 @@ def get_activation(model, video_inputs, layer, isLabel = False):
 
 if __name__ == "__main__":
     # Specify the desired model name ('slowfast_r50', 'x3d_m', 'slow_r50' or 'dorsalnet')
-    model_name = 'slowfast_4x16_r50'
+    model_name = 'dorsalnet'
     status = 'dynamic' # 'dynamic'
     pretrained = True
 
