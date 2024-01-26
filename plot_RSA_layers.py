@@ -8,15 +8,21 @@ from tqdm import tqdm
 from scipy import stats
 from statsmodels.stats.multitest import fdrcorrection
 import matplotlib
+import os
 
-model_name = 'dorsalnet' # 'x3d_m', 'slowfast_r50', 'slow_r50', 'dorsalnet'
+# 'alexnet', 'resnet50', 'densenet121', 'vgg16'
+model_name = 'vgg16' # 'x3d_m', 'slowfast_r50', 'slow_r50', 'dorsalnet'
 
 # Define correlation types, regions of interest, condition and status
-cor_types = ['pearson', 'spearman', 'euclidean']
+cor_types = ['pearson', 'euclidean']
 ROIList = ['V1', 'pFS', 'LO', 'EBA', 'MTSTS', 'infIPS', 'SMG', 'behavior']
-condition = ['slow', 'fast', 'fusion', 'rmslow', '']
+condition = ['slow', 'fast', 'fusion', '']
 stat = ['dynamic', 'static']
 cor_method = ['RSA', 'cor']
+israndom = False
+
+random_initialized = 'random/' if israndom else ''
+imagenet = 'imagenet/' if (model_name in ['alexnet', 'resnet50', 'densenet121', 'vgg16']) else ''
 
 # Initialize an empty array for storing max layers
 max_layer = np.empty((len(cor_types), len(ROIList)), dtype=object)
@@ -24,7 +30,9 @@ max_layer = np.empty((len(cor_types), len(ROIList)), dtype=object)
 names = {'_anim' : ['_animate', '_inanimate'], '': ['']}
 color = ['blue', 'red', 'green', 'orange']
 for cond in condition:
-    if model_name != 'slowfast_r50' and cond != '':
+    if 'slow' not in model_name and cond != '':
+        continue
+    if 'slow_r50' in model_name and cond != 'slow':
         continue
     for corm in cor_method:
         for c, cor in enumerate(cor_types):
@@ -48,9 +56,9 @@ for cond in condition:
                         for s, status in enumerate(stat):
                             data = []
 
-                            folder = f'result/RSA/{model_name}/{cor}/{region}'
+                            folder = f'result/RSA/{imagenet}{random_initialized}{model_name}/{cor}/{region}'
                             if region == 'behavior':
-                                with open(f'{folder}/__{status}_{corm}{ind}.pkl', 'rb') as File:
+                                with open(f'{folder}/S02_all_{status}_{corm}{ind}.pkl', 'rb') as File:
                                     RSA = pickle.load(File)
 
                                 data = (list(RSA.values()))
@@ -70,16 +78,16 @@ for cond in condition:
                             data = np.array(data)
                             filtered_list = list(RSA.keys())
 
-                            if model_name == 'slowfast_r50':
+                            if 'slowfast' in model_name:
                                 # Filter RSA data based on the specified condition
                                 if cond == 'slow':
-                                    filtered_list = [key for key in filtered_list if 'multipathway_blocks.1' in key]
-                                elif cond == 'fast':
                                     filtered_list = [key for key in filtered_list if 'multipathway_blocks.0' in key]
+                                elif cond == 'fast':
+                                    filtered_list = [key for key in filtered_list if 'multipathway_blocks.1' in key]
                                 elif cond == 'fusion':
                                     filtered_list = [key for key in filtered_list if 'multipathway_fusion' in key]
-                                elif cond == 'rmslow':
-                                    filtered_list = [key for key in filtered_list if 'multipathway_blocks.1' not in key]
+                            elif 'slow_r50' in model_name:
+                                filtered_list = [key for key in filtered_list if 'multipathway_blocks.0' in key]
 
                             # Get the indices of selected keys
                             indices = [index for index, key in enumerate(RSA.keys()) if key in filtered_list]
@@ -130,9 +138,11 @@ for cond in condition:
 
                 matplotlib.rc('font', size=24)
                 plt.tight_layout()
-                plt.savefig(f'plot/{corm}/{model_name}_{cor}_{cond}{mode}.png')
+                file_path = f'plot/{imagenet}{random_initialized}{corm}/{model_name}_{cor}_{cond}{mode}.png'
+                os.makedirs(os.path.dirname(file_path), exist_ok=True)
+                plt.savefig(file_path)
                 plt.close()
 
         # Save the max layers data
         save_folder = f'result/max layer'
-        np.savez(f'{save_folder}/{corm}/layer_{model_name}_{cond}.npz', max_layer)
+        np.savez(f'{save_folder}/{imagenet}{random_initialized}{corm}/layer_{model_name}_{cond}.npz', max_layer)
