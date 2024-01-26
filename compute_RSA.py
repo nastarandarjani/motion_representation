@@ -40,7 +40,10 @@ def load_MRI(filepath, hemisphere):
 
     # swap rows to the desired form
     dynamic_tstat = dynamic_tstat[[5, 0, 1, 4, 2, 3], :]
+    dynamic_tstat = dynamic_tstat[:, [5, 0, 1, 4, 2, 3]]
+
     static_tstat = static_tstat[[5, 0, 1, 4, 2, 3], :]
+    static_tstat = static_tstat[:, [5, 0, 1, 4, 2, 3]]
 
     return dynamic_tstat, static_tstat
 
@@ -54,6 +57,12 @@ def load_behav():
     dynamic_behav = dynamic_behav.reshape(6, 6, 6, 6)
     dynamic_behav = np.mean(dynamic_behav, axis = 1)
     dynamic_behav = np.mean(dynamic_behav, axis = 2)
+
+    static_behav = static_behav[[5, 0, 1, 4, 2, 3], :]
+    static_behav = static_behav[:, [5, 0, 1, 4, 2, 3]]
+
+    dynamic_behav = dynamic_behav[[5, 0, 1, 4, 2, 3], :]
+    dynamic_behav = dynamic_behav[:, [5, 0, 1, 4, 2, 3]]
     return static_behav, dynamic_behav
 
 def calculate_RDM(response_patterns, method='euclidean'):
@@ -140,7 +149,7 @@ ROIList = ['V1', 'pFS', 'LO', 'EBA', 'MTSTS', 'infIPS', 'SMG', 'behavior']
 hemispheres = ['all', 'rh', 'lh']
 names = {'_anim' : ['_animate', '_inanimate'], '': ['']}
 israndom = False
-isimagenet = False
+isimagenet = True
 
 
 if isimagenet:
@@ -163,11 +172,12 @@ for sub in range(2, 18):
                 if region == 'behavior':
                     if sub == 2:
                         static_RDM, dynamic_RDM = load_behav()
-                        subject = ''
-                        hem = ''
-                        with open(f'{RDM_folder}/{subject}_RDM_{hem}_dynamic.pkl', 'wb') as File:
+
+                        if not os.path.exists(RDM_folder):
+                            os.makedirs(RDM_folder)
+                        with open(f'{RDM_folder}/RDM_dynamic.pkl', 'wb') as File:
                             pickle.dump(dynamic_RDM, File)
-                        with open(f'{RDM_folder}/{subject}_RDM_{hem}_static.pkl', 'wb') as File:
+                        with open(f'{RDM_folder}/RDM_static.pkl', 'wb') as File:
                             pickle.dump(static_RDM, File)
                     else:
                         continue
