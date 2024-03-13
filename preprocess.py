@@ -86,6 +86,7 @@ def preprocess_images(input_folder):
             noise[:, :, mask] = image[:, :, mask]
             noise = np.transpose(noise, [1, 2, 3, 0])
 
+            filename = filename.split('.')[0]
             output_video_path = os.path.join(input_folder, f'img_{filename}.mp4')
 
             # Save the processed video
