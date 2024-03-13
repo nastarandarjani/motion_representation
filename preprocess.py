@@ -6,6 +6,8 @@ from pytorchvideo.transforms import (
     UniformTemporalSubsample
 )
 from torchvision.io import write_video
+from PIL import Image
+import numpy as np
 
 def preprocess_video(input_folder, target_fps=30, clip_duration=3):
     """
@@ -58,38 +60,38 @@ def preprocess_images(input_folder):
     # List all files in the input folder
     file_list = os.listdir(input_folder)
 
+    counter = 1
     # Iterate through each file in the folder
     for filename in file_list:
         if '.png' in filename:
             # load image
             image = Image.open(os.path.join(input_folder, filename))
             image = np.array(image)
-            # find transparent part
-            mask = np.all(image == [0, 255, 0], axis=2)
+            # find transparent part (aka green color)
+            mask = np.all(image != [0, 255, 0], axis=2)
+            image = np.transpose(image, [2, 0, 1])
 
-            # make image black and white
-            d = np.mean(image, axis=2).astype(int)
-            image = np.repeat(d[:, :, np.newaxis], 3, axis=2)
+            # # make image black and white
+            # d = np.mean(image, axis=2).astype(int)
+            # image = np.repeat(d[:, :, np.newaxis], 3, axis=2)
 
             # select noise from the same named video file
-            filename = filename.split('.')[0]
-            file_path = os.path.join(input_folder, filename + '.mp4')
+            file_path = os.path.join(input_folder, str(counter) + '.mp4')
             video = EncodedVideo.from_path(file_path)
             video_data = video.get_clip(start_sec=0, end_sec=3)['video']
-            video_data = np.transpose(video_data, [2, 3, 0, 1])
-            noise = video_data[:, :, :, 0].numpy().astype(int)
+            noise = video_data.numpy().astype(int)
 
             # place noise over the image
-            image[mask] = noise[mask]
-
-            # make a video from the image
-            video_image = np.repeat(image[:, :, :, np.newaxis], 90, axis=3)
+            image = np.repeat(image[:, np.newaxis, :, :], noise.shape[1], axis = 1)
+            noise[:, :, mask] = image[:, :, mask]
+            noise = np.transpose(noise, [1, 2, 3, 0])
 
             output_video_path = os.path.join(input_folder, f'img_{filename}.mp4')
 
             # Save the processed video
-            write_video(output_video_path, np.transpose(video_image, [3, 0, 1, 2]), 30)
+            write_video(output_video_path, noise, 30)
+            counter += 1
 
-folder_path = '/stimuli/'
+folder_path = 'stimuli/'
 preprocess_video(folder_path)
 preprocess_images(folder_path)
