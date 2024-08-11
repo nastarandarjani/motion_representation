@@ -1,0 +1,117 @@
+# plot MDS
+
+import numpy as np
+from matplotlib.backends.backend_pdf import PdfPages
+from matplotlib.gridspec import SubplotSpec
+import matplotlib.pyplot as plt
+import pickle
+from sklearn.manifold import MDS
+import tqdm
+import matplotlib
+
+matplotlib.rcParams.update(matplotlib.rcParamsDefault)
+
+# Define models, correlation types, regions of interest, and condition
+models = ['x3d_m', 'slowfast_r50', 'slow_r50', 'dorsalnet']
+cor_types = ['pearson', 'spearman', 'euclidean']
+ROIList = ['V1', 'pFS', 'LO', 'EBA', 'MTSTS', 'infIPS', 'SMG', 'behavior']
+
+# Specify the condition ('slow', 'fast', 'rmslow', 'fusion', or '')
+condition = ['slow', 'fast', 'fusion', 'rmslow', '']
+
+# Define a list of names
+name = ['ball', 'human', 'mammal', 'reptile', 'penswi', 'tool']
+
+colors = ['blue', 'green', 'red', 'purple', 'orange', 'brown']
+seed = np.random.RandomState(seed=0)
+# Loop through different models
+for model_name in models:
+    for cond in condition:
+        # Set the condition based on the model
+        if model_name != 'slowfast_r50' and cond != '':
+            continue
+
+        # Load the maximum layer data for the current model and condition
+        max_layer = np.load(f'result/max layer/RSA/layer_{model_name}_{cond}.npz', allow_pickle=True)['arr_0']
+
+        # Loop through different correlation types
+        for c, cor in enumerate(cor_types):
+            # Specify the path to save PDF plots
+            save_pdf_path = f'plot/MDS_{model_name}_{cor}_{cond}.pdf'
+            pdf_pages = PdfPages(save_pdf_path)
+
+            # Loop through regions of interest
+            for r, region in enumerate(ROIList):
+                # Create subplots for each region
+                fig, axes = plt.subplots(2, 2, figsize=(10, 10), sharex=True, sharey=True)
+
+                # Loop through dynamic and static status
+                for s, status in enumerate(['dynamic', 'static']):
+                    ax = axes[s, 0]
+                    fMRI_RDM = []
+
+                    RDM_folder = f'result/fMRI RDM/{cor}/{region}'
+
+                    if region == 'behavior':
+                        with open(f'{RDM_folder}/_RDM__{status}.pkl', 'rb') as File:
+                            fMRI_RDM = (pickle.load(File))
+                    else:
+                        # Loop through subjects
+                        for sub in range(2, 18):
+                            if sub == 8:
+                                continue
+                            subject = f'S{sub:02d}'
+
+                            # Load fMRI RDM data from file
+                            with open(f'{RDM_folder}/{subject}_RDM_all_{status}.pkl', 'rb') as File:
+                                fMRI_RDM.append(pickle.load(File))
+
+                        fMRI_RDM = np.mean(fMRI_RDM, axis=0)
+
+
+                    mds = MDS(dissimilarity='precomputed', n_components=2, normalized_stress='auto', random_state=seed)
+                    mds_R = mds.fit_transform(fMRI_RDM)
+
+                    # plot fMRI MDS
+                    ax.scatter(mds_R[:, 0], mds_R[:, 1], c='white')
+                    for i, txt in enumerate(name):
+                        style = {'boxstyle':'round', 'facecolor': f'{colors[i]}', 'alpha': 0.5, 'edgecolor':'white'}
+                        ax.text(mds_R[i, 0], mds_R[i, 1], txt, ha='center', va='center', bbox = style)
+
+                    ax.set_xticks([])
+                    ax.set_yticks([])
+                    ax.set_title('fmri ' + status)
+
+                    ax = axes[s, 1]
+                    model_folder = 'result/model RDM'
+
+                    # Load model RDM data from file
+                    with open(f'{model_folder}/{status}/{cor}_RDM_{model_name}.pkl', 'rb') as File:
+                        model_RDM = pickle.load(File)
+
+                    for layer_name, RDM in model_RDM.items():
+                        if layer_name == max_layer[c, r]:
+                            layer_RDM = RDM
+
+                    mds = MDS(dissimilarity='precomputed', n_components=2, normalized_stress='auto', random_state=seed)
+                    mds_R = mds.fit_transform(fMRI_RDM)
+
+                    # plot fMRI MDS
+                    ax.scatter(mds_R[:, 0], mds_R[:, 1], c='white')
+                    for i, txt in enumerate(name):
+                        style = {'boxstyle':'round', 'facecolor': f'{colors[i]}', 'alpha': 0.5, 'edgecolor':'white'}
+                        ax.text(mds_R[i, 0], mds_R[i, 1], txt, ha='center', va='center', bbox = style)
+
+                    ax.set_xticks([])
+                    ax.set_yticks([])
+                    ax.set_title(f'model {status}\n{max_layer[c, r]}')
+
+                fig.suptitle(region)
+                plt.tight_layout()
+
+                # Save the PDF page
+                pdf_pages.savefig()
+                plt.close()
+
+            # Close the PDF file
+            pdf_pages.close()
