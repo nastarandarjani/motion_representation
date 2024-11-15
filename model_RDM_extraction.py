@@ -1,12 +1,5 @@
-# transformations are based on https://pytorch.org/hub/facebookresearch_pytorchvideo_slowfast/
-
-# Necessary installation
-# pip install av
-# pip install pytorchvideo
-
 import numpy as np
 import torch
-import av
 import json
 import urllib
 import pickle
@@ -29,6 +22,9 @@ from pytorchvideo.transforms import (
 import os
 from sklearn.metrics.pairwise import euclidean_distances
 from DorsalNet.dorsalnet import DorsalNet
+import torch.nn.init as init
+
+os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 
 # Define functions
 
@@ -73,11 +69,33 @@ def load_model(model_name, pretrained=True):
             )
 
         model = slowfast_4x16_r50(pretrained = True)
+    elif pretrained == "cpc":
+        model = torch.hub.load(
+            "facebookresearch/pytorchvideo", model_name, pretrained=False
+        )
+        checkpoint = torch.load(
+            "/Users/nastaran/Documents/Code/epoch_0010_best.ckpt",
+            map_location=torch.device("cpu"),
+        )
+
+        state_dict = {}
+        old_prefix = "network.backbone.model."
+        new_prefix = "blocks."
+        for key, value in checkpoint["state_dict"].items():
+            if key.startswith(old_prefix):
+                # Replace the prefix
+                new_key = new_prefix + key[len(old_prefix) :]
+            else:
+                new_key = key
+            state_dict[new_key] = value
+
+        model.load_state_dict(state_dict, strict=False)
+
     else:
         model = torch.hub.load('facebookresearch/pytorchvideo', model_name, pretrained=pretrained)
 
     model = model.eval()
-    model = model.to('cuda')
+    model = model.to("mps")
     return model
 
 def apply_video_transform(model_name, video):
@@ -91,8 +109,6 @@ def apply_video_transform(model_name, video):
             num_frames = 32
             sampling_rate = 2
             slowfast_alpha = 4
-            num_clips = 10
-            num_crops = 3
 
         elif model_name == 'slowfast_16x8_r101_50_50':
             side_size = 256
@@ -102,8 +118,6 @@ def apply_video_transform(model_name, video):
             num_frames = 64
             sampling_rate = 2
             slowfast_alpha = 4
-            num_clips = 10
-            num_crops = 3
 
         elif model_name == 'slowfast_4x16_r50':
             side_size = 256
@@ -113,8 +127,6 @@ def apply_video_transform(model_name, video):
             num_frames = 32
             sampling_rate = 2
             slowfast_alpha = 8
-            num_clips = 10
-            num_crops = 3
 
         class PackPathway(torch.nn.Module):
             """
@@ -238,8 +250,10 @@ def get_top_k_predicted_labels(preds, k=5):
         """
         json_url = "https://dl.fbaipublicfiles.com/pyslowfast/dataset/class_names/kinetics_classnames.json"
         json_filename = "kinetics_classnames.json"
-        try: urllib.URLopener().retrieve(json_url, json_filename)
-        except: urllib.request.urlretrieve(json_url, json_filename)
+        try:
+            urllib.URLopener().retrieve(json_url, json_filename)
+        except:
+            urllib.request.urlretrieve(json_url, json_filename)
 
         with open(json_filename, "r") as f:
             kinetics_classnames = json.load(f)
@@ -318,9 +332,10 @@ def get_activation(model, video_inputs, layer, isLabel = False):
 
 if __name__ == "__main__":
     # Specify the desired model name ('slowfast_r50', 'x3d_m', 'slow_r50' or 'dorsalnet')
-    model_name = 'dorsalnet'
-    status = 'dynamic' # 'dynamic'
-    pretrained = True
+    model_name = "slow_r50"
+    status = "dynamic"  # 'dynamic'
+    pretrained = "cpc"
+    random_layer = "fusion/"  # '', 'slow/', 'fast/', 'fusion/'
 
     isslow = False
     if model_name == 'slow_r50':
@@ -333,6 +348,26 @@ if __name__ == "__main__":
 
     # Load the pre-trained model
     model = load_model(model_name, pretrained = pretrained)
+
+    for module_name, module in model.named_modules():
+        if (
+            ("multipathway_blocks.0" in module_name and random_layer == "slow/")
+            or ("multipathway_blocks.1" in module_name and random_layer == "fast/")
+            or ("multipathway_fusion" in module_name and random_layer == "fusion/")
+        ):
+            if isinstance(module, torch.nn.Conv3d) or isinstance(
+                module, torch.nn.Linear
+            ):
+                # Reset the weights using PyTorch's initialization functions
+                init.kaiming_normal_(module.weight, mode="fan_out", nonlinearity="relu")
+                if module.bias is not None:
+                    init.constant_(module.bias, 0.0)
+            elif isinstance(module, torch.nn.BatchNorm3d):
+                # Reset batch normalization parameters
+                init.constant_(module.weight, 1)
+                init.constant_(module.bias, 0)
+                init.constant_(module.running_mean, 0)
+                init.constant_(module.running_var, 1)
 
     if isslow:
         for module_name, module in model.named_modules():
@@ -358,7 +393,7 @@ if __name__ == "__main__":
     euclidean_RDM = {}
     pearson_RDM = {}
     spearman_RDM = {}
-    batch_size = int(36/1)
+    batch_size = int(36 / 2)
     for model_layer in tqdm(modules):
         layer = model
         for attr in model_layer.split('.'):
@@ -370,9 +405,11 @@ if __name__ == "__main__":
             batch_videos = transformed_videos[block:block+batch_size]
 
             if 'slowfast' in model_name:
-                batch_videos = [[j.to('cuda')[None, ...] for j in i] for i in batch_videos]
+                batch_videos = [
+                    [j.to("mps")[None, ...] for j in i] for i in batch_videos
+                ]
             else:
-                batch_videos = [i.to('cuda')[None, ...] for i in batch_videos]
+                batch_videos = [i.to("mps")[None, ...] for i in batch_videos]
 
             with torch.no_grad():
                 batch_activations = get_activation(model, batch_videos, layer)
@@ -398,19 +435,21 @@ if __name__ == "__main__":
     if isslow:
         model_name = 'slow_r50'
 
-    random_initialized = 'random/' if not pretrained else ''
+    random_initialized = "random/" if random_layer != "" else ""
+    is_cpc = "cpc/" if pretrained == "cpc" else ""
+    pretrained = "untrained/" if not pretrained else ""
     # Save the RDM dictionary to a pickle file
-    file_path = f'result/model RDM/{random_initialized}{status}/pearson_RDM_{model_name}.pkl'
+    file_path = f"result/model RDM/{is_cpc}{pretrained}{random_initialized}{status}/{random_layer}pearson_RDM_{model_name}.pkl"
     print(file_path)
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
     with open(file_path, 'wb') as File:
         pickle.dump(pearson_RDM, File)
 
-    file_path = f'result/model RDM/{random_initialized}{status}/spearman_RDM_{model_name}.pkl'
+    file_path = f"result/model RDM/{is_cpc}{pretrained}{random_initialized}{status}/{random_layer}spearman_RDM_{model_name}.pkl"
     with open(file_path, 'wb') as File:
         pickle.dump(spearman_RDM, File)
 
-    file_path = f'result/model RDM/{random_initialized}{status}/euclidean_RDM_{model_name}.pkl'
+    file_path = f"result/model RDM/{is_cpc}{pretrained}{random_initialized}{status}/{random_layer}euclidean_RDM_{model_name}.pkl"
     with open(file_path, 'wb') as File:
         pickle.dump(euclidean_RDM, File)
