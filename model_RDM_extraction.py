@@ -1,7 +1,5 @@
 import numpy as np
 import torch
-import json
-import urllib
 import pickle
 from tqdm import tqdm
 import torch.nn as nn
@@ -230,49 +228,6 @@ def process_video(model_name, video_path):
 
     return transformed_video_data
 
-def get_top_k_predicted_labels(preds, k=5):
-    """
-    Get the top-k predicted labels from a set of model predictions.
-
-    Args:
-        preds (torch.Tensor): Model predictions as a tensor.
-        k (int): Number of top labels to retrieve.
-
-    Returns:
-        list: Top-k predicted labels.
-    """
-    def get_labels_name():
-        """
-        Retrieve the label names from the Kinetics dataset.
-
-        Returns:
-            dict: A dictionary mapping label IDs to label names.
-        """
-        json_url = "https://dl.fbaipublicfiles.com/pyslowfast/dataset/class_names/kinetics_classnames.json"
-        json_filename = "kinetics_classnames.json"
-        try:
-            urllib.URLopener().retrieve(json_url, json_filename)
-        except:
-            urllib.request.urlretrieve(json_url, json_filename)
-
-        with open(json_filename, "r") as f:
-            kinetics_classnames = json.load(f)
-
-        # Create an id to label name mapping
-        kinetics_id_to_classname = {}
-        for k, v in kinetics_classnames.items():
-            kinetics_id_to_classname[v] = str(k).replace('"', "")
-
-        return kinetics_id_to_classname
-
-    post_act = torch.nn.Softmax(dim=1)
-    preds = post_act(preds)
-    pred_classes = preds.topk(k=1)[1]
-
-    # Map the predicted classes to the label names
-    pred_class_names = [kinetics_id_to_classname[int(i)] for i in pred_classes]
-
-    print(f"Top 5 predicted labels for {video_file}: {', '.join(pred_class_names)}")
 
 def get_relu_modules(model):
     """
@@ -294,7 +249,8 @@ def get_relu_modules(model):
 
     return modules
 
-def get_activation(model, video_inputs, layer, isLabel = False):
+
+def get_activation(model, video_inputs, layer):
     """
     Get the activation from a specified layer of a pre-trained model.
 
@@ -307,6 +263,7 @@ def get_activation(model, video_inputs, layer, isLabel = False):
         numpy.ndarray: Activation values as a NumPy array.
     """
     global model_name
+
     def hook_func(model, input, output):
         nonlocal Layer_output
         Layer_output = output
@@ -314,17 +271,17 @@ def get_activation(model, video_inputs, layer, isLabel = False):
     # Register the forward hook on the desired layer
     hook = layer.register_forward_hook(hook_func)
 
-    if 'slowfast' in model_name:
-        input = [torch.cat([video_input[i] for video_input in video_inputs], dim=0) for i in range(len(video_inputs[0]))]
+    if "slowfast" in model_name:
+        input = [
+            torch.cat([video_input[i] for video_input in video_inputs], dim=0)
+            for i in range(len(video_inputs[0]))
+        ]
     else:
         input = torch.cat(video_inputs, dim=0)
 
     Layer_output = None
-    preds = model(input)
+    model(input)
     hook.remove()
-
-    if isLabel:
-        get_top_k_predicted_labels(preds)
 
     activations_batch = Layer_output.detach().cpu().numpy().reshape(len(Layer_output), -1)
     return activations_batch
