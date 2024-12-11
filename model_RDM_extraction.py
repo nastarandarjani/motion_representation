@@ -1,3 +1,6 @@
+import os
+
+os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 import numpy as np
 import torch
 import pickle
@@ -15,14 +18,17 @@ from torchvision.transforms._transforms_video import (
 from pytorchvideo.transforms import (
     ApplyTransformToKey,
     ShortSideScale,
-    UniformTemporalSubsample
+    UniformTemporalSubsample,
 )
-import os
 from sklearn.metrics.pairwise import euclidean_distances
 from DorsalNet.dorsalnet import DorsalNet
 import torch.nn.init as init
 
-os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
+
+# Get the directory where the script is located
+script_dir = os.path.dirname(os.path.abspath(__file__))
+# Change to a relative directory from the script's location
+os.chdir(script_dir)
 
 # Define functions
 
@@ -72,7 +78,7 @@ def load_model(model_name, pretrained=True):
             "facebookresearch/pytorchvideo", model_name, pretrained=False
         )
         checkpoint = torch.load(
-            "/Users/nastaran/Documents/Code/epoch_0010_best.ckpt",
+            "../epoch_0010_best.ckpt",
             map_location=torch.device("cpu"),
         )
 
@@ -291,8 +297,8 @@ if __name__ == "__main__":
     # Specify the desired model name ('slowfast_r50', 'x3d_m', 'slow_r50' or 'dorsalnet')
     model_name = "slow_r50"
     status = "dynamic"  # 'dynamic'
-    pretrained = "cpc"
-    random_layer = "fusion/"  # '', 'slow/', 'fast/', 'fusion/'
+    pretrained = False
+    random_layer = ""  # '', 'slow/', 'fast/', 'fusion/'
 
     isslow = False
     if model_name == 'slow_r50':
@@ -328,7 +334,7 @@ if __name__ == "__main__":
 
     if isslow:
         for module_name, module in model.named_modules():
-            if 'branch1' in module_name and 'multipathway_blocks.0' in module_name:
+            if "multipathway_fusion" in module_name:
                 for param in module.parameters():
                     param.requires_grad = False
                     if isinstance(module, torch.nn.Conv3d):

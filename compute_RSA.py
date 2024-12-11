@@ -137,9 +137,9 @@ def filter_RDM(RDM, mode):
 
 
 # List of models, correlation types, regions of interest, and hemispheres
-models = ["slowfast_r50"]  # , 'slow_r50', 'dorsalnet']
-pretrained = "cpc"
-random_layer = "slow/"  #'fusion/'
+models = ["slow_r50"]  # , 'slow_r50', 'dorsalnet']
+pretrained = False
+random_layer = ""  #'fusion/'
 isimagenet = False
 correlation_types = ["pearson"]
 ROIList = ["V1", "pFS", "LO", "EBA", "MTSTS", "infIPS", "SMG", "behavior"]
