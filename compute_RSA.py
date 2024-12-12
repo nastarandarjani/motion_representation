@@ -137,9 +137,10 @@ def filter_RDM(RDM, mode):
 
 
 # List of models, correlation types, regions of interest, and hemispheres
-models = ["slow_r50"]  # , 'slow_r50', 'dorsalnet']
-pretrained = False
-random_layer = ""  #'fusion/'
+models = ["slowfast_r50", "slow_r50"]  # , 'slow_r50', 'dorsalnet']
+dataset = "charades"
+pretrained = True
+random_layer = "fusion/"  #'fusion/'
 isimagenet = False
 correlation_types = ["pearson"]
 ROIList = ["V1", "pFS", "LO", "EBA", "MTSTS", "infIPS", "SMG", "behavior"]
@@ -154,6 +155,7 @@ random_initialized = "random/" if random_layer != "" else ""
 imagenet = "imagenet/" if isimagenet else ""
 is_cpc = "cpc/" if pretrained == "cpc" else ""
 pretrained = "untrained/" if not pretrained else ""
+data = f"{dataset}/" if not (dataset == "k400") else ""
 # Loop through subjects
 for sub in range(2, 18):
     if sub == 8:
@@ -215,7 +217,7 @@ for sub in range(2, 18):
 
                 for model_name in models:
                     # Construct the save folder path
-                    save_folder = f"result/RSA/{imagenet}{is_cpc}{pretrained}{random_initialized}{model_name}/{cor}/{region}/{random_layer}"
+                    save_folder = f"result/RSA/{imagenet}{data}{is_cpc}{pretrained}{random_initialized}{model_name}/{cor}/{region}/{random_layer}"
 
                     # Create the save folder if it doesn't exist
                     if not os.path.exists(save_folder):
@@ -225,7 +227,7 @@ for sub in range(2, 18):
                         dyn_RDM = filter_RDM(dynamic_RDM, mode)
                         stat_RDM = filter_RDM(static_RDM, mode)
 
-                        model_path = f"result/model RDM/{imagenet}{is_cpc}{pretrained}{random_initialized}dynamic/{random_layer}{cor}_RDM_{model_name}.pkl"
+                        model_path = f"result/model RDM/{imagenet}{data}{is_cpc}{pretrained}{random_initialized}dynamic/{random_layer}{cor}_RDM_{model_name}.pkl"
                         with open(model_path, "rb") as pickle_file:
                             model_RDM_dyn = pickle.load(pickle_file)
 

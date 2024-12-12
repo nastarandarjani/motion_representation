@@ -15,9 +15,10 @@ os.chdir(script_dir)
 # 'alexnet', 'resnet50', 'densenet121', 'vgg16'
 model_name = "slowfast_r50"  # 'x3d_m', 'slowfast_r50', 'dorsalnet'
 # ['slowfast_r101', 'slowfast_16x8_r101_50_50', 'slowfast_4x16_r50']
+dataset = "charades"
 statistics = "median"
-pretrained = False
-random_layer = ""
+pretrained = True
+random_layer = "fusion/"
 
 # Define correlation types, regions of interest, condition and status
 cor_types = ["pearson"]  # , 'spearman']
@@ -32,6 +33,7 @@ ismedian = 1 if statistics == "median" else 0
 random_initialized = "random/" if random_layer != "" else ""
 is_cpc = "cpc/" if pretrained == "cpc" else ""
 pretrained = "untrained/" if not pretrained else ""
+datas = f"{dataset}/" if not (dataset == "k400") else ""
 imagenet = (
     "imagenet/"
     if (model_name in ["alexnet", "resnet50", "densenet121", "vgg16"])
@@ -66,7 +68,7 @@ for cor in cor_types:
             for s in range(2):
                 data = []
 
-                folder = f"result/RSA/{imagenet}{is_cpc}{pretrained}{random_initialized}{model_name}/{cor}/{region}/{random_layer}"
+                folder = f"result/RSA/{imagenet}{datas}{is_cpc}{pretrained}{random_initialized}{model_name}/{cor}/{region}/{random_layer}"
                 if region == "behavior":
                     with open(f"{folder}S02_all_{status}_RSA.pkl", "rb") as File:
                         RSA = pickle.load(File)
@@ -184,7 +186,7 @@ for cor in cor_types:
     )
     plt.suptitle(model_name, fontweight="bold", fontsize=40)
     plt.tight_layout()
-    file_path = f"plot/{imagenet}{is_cpc}{pretrained}{random_layer}{random_initialized}RSA/{model_name}_{cor}.png"
+    file_path = f"plot/{imagenet}{datas}{is_cpc}{pretrained}{random_layer}{random_initialized}RSA/{model_name}_{cor}.png"
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
     plt.savefig(file_path)
     plt.close()

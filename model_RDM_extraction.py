@@ -108,7 +108,16 @@ def load_model(model_name, pretrained=True, dataset="k400"):
                 weight_path = "https://dl.fbaipublicfiles.com/pytorchvideo/model_zoo/ssv2/SLOWFAST_8x8_R50.pyth"
             elif dataset == "charades":
                 weight_path = "https://dl.fbaipublicfiles.com/pytorchvideo/model_zoo/charades/SLOWFAST_8x8_R50.pyth"
-            model.load_state_dict(torch.load(weight_path))
+
+            state_dict = torch.hub.load_state_dict_from_url(
+                weight_path, map_location="cuda"
+            )
+            filtered_state_dict = {
+                k: v
+                for k, v in state_dict["model_state"].items()
+                if not k.startswith("blocks.6.proj")
+            }
+            model.load_state_dict(filtered_state_dict, strict=False)
 
     model = model.eval()
     model = model.to("mps")
