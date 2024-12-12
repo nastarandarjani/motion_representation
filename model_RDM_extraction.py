@@ -32,7 +32,7 @@ os.chdir(script_dir)
 
 # Define functions
 
-def load_model(model_name, pretrained=True):
+def load_model(model_name, pretrained=True, dataset="k400"):
     """
     Load a pre-trained PyTorchVideo model.
 
@@ -96,7 +96,19 @@ def load_model(model_name, pretrained=True):
         model.load_state_dict(state_dict, strict=False)
 
     else:
-        model = torch.hub.load('facebookresearch/pytorchvideo', model_name, pretrained=pretrained)
+        if dataset == "k400":
+            model = torch.hub.load(
+                "facebookresearch/pytorchvideo", model_name, pretrained=pretrained
+            )
+        else:
+            model = torch.hub.load(
+                "facebookresearch/pytorchvideo", model_name, pretrained=False
+            )
+            if dataset == "ssv2":
+                weight_path = "https://dl.fbaipublicfiles.com/pytorchvideo/model_zoo/ssv2/SLOWFAST_8x8_R50.pyth"
+            elif dataset == "charades":
+                weight_path = "https://dl.fbaipublicfiles.com/pytorchvideo/model_zoo/charades/SLOWFAST_8x8_R50.pyth"
+            model.load_state_dict(torch.load(weight_path))
 
     model = model.eval()
     model = model.to("mps")
@@ -296,8 +308,9 @@ def get_activation(model, video_inputs, layer):
 if __name__ == "__main__":
     # Specify the desired model name ('slowfast_r50', 'x3d_m', 'slow_r50' or 'dorsalnet')
     model_name = "slow_r50"
+    dataset = "k400"  # k400, ssv2, charades
     status = "dynamic"  # 'dynamic'
-    pretrained = False
+    pretrained = False  # True, False, cpc
     random_layer = ""  # '', 'slow/', 'fast/', 'fusion/'
 
     isslow = False
@@ -310,7 +323,7 @@ if __name__ == "__main__":
     processed_videos = [file for file in sorted(os.listdir('stimuli')) if file.startswith(prefix)]
 
     # Load the pre-trained model
-    model = load_model(model_name, pretrained = pretrained)
+    model = load_model(model_name, pretrained=pretrained, dataset=dataset)
 
     for module_name, module in model.named_modules():
         if (
@@ -401,18 +414,19 @@ if __name__ == "__main__":
     random_initialized = "random/" if random_layer != "" else ""
     is_cpc = "cpc/" if pretrained == "cpc" else ""
     pretrained = "untrained/" if not pretrained else ""
+    data = f"{dataset}/" if not (dataset == "k400") else ""
     # Save the RDM dictionary to a pickle file
-    file_path = f"result/model RDM/{is_cpc}{pretrained}{random_initialized}{status}/{random_layer}pearson_RDM_{model_name}.pkl"
+    file_path = f"result/model RDM/{data}{is_cpc}{pretrained}{random_initialized}{status}/{random_layer}pearson_RDM_{model_name}.pkl"
     print(file_path)
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
     with open(file_path, 'wb') as File:
         pickle.dump(pearson_RDM, File)
 
-    file_path = f"result/model RDM/{is_cpc}{pretrained}{random_initialized}{status}/{random_layer}spearman_RDM_{model_name}.pkl"
+    file_path = f"result/model RDM/{data}{is_cpc}{pretrained}{random_initialized}{status}/{random_layer}spearman_RDM_{model_name}.pkl"
     with open(file_path, 'wb') as File:
         pickle.dump(spearman_RDM, File)
 
-    file_path = f"result/model RDM/{is_cpc}{pretrained}{random_initialized}{status}/{random_layer}euclidean_RDM_{model_name}.pkl"
+    file_path = f"result/model RDM/{data}{is_cpc}{pretrained}{random_initialized}{status}/{random_layer}euclidean_RDM_{model_name}.pkl"
     with open(file_path, 'wb') as File:
         pickle.dump(euclidean_RDM, File)
