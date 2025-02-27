@@ -13,12 +13,12 @@ script_dir = os.path.dirname(os.path.abspath(__file__))
 os.chdir(script_dir)
 
 # 'alexnet', 'resnet50', 'densenet121', 'vgg16'
-model_name = "slowfast_r50"  # 'x3d_m', 'slowfast_r50', 'dorsalnet'
+model_name = "res_r50"  # 'x3d_m', 'slowfast_r50', 'dorsalnet'
 # ['slowfast_r101', 'slowfast_16x8_r101_50_50', 'slowfast_4x16_r50']
-dataset = "charades"
+dataset = "k400"
 statistics = "median"
 pretrained = True
-random_layer = "fusion/"
+random_layer = ""  # "fusion/"
 
 # Define correlation types, regions of interest, condition and status
 cor_types = ["pearson"]  # , 'spearman']

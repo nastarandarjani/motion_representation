@@ -8,7 +8,7 @@ from tqdm import tqdm
 import torch.nn as nn
 from scipy.stats import spearmanr
 from typing import Any
-from pytorchvideo.models.hub import slowfast
+from pytorchvideo.models.hub import slowfast, r2plus1d
 from pytorchvideo.data.encoded_video import EncodedVideo
 from torchvision.transforms import Compose, Lambda
 from torchvision.transforms._transforms_video import (
@@ -38,6 +38,8 @@ def load_model(model_name, pretrained=True, dataset="k400"):
 
     Args:
         model_name (str): Name of the model to load.
+        pretrained (bool): Whether to load pretrained weights.
+        dataset (str): Dataset name for loading specific weights.
 
     Returns:
         torch.nn.Module: Loaded pre-trained model.
@@ -45,7 +47,9 @@ def load_model(model_name, pretrained=True, dataset="k400"):
     if model_name == 'dorsalnet':
         network = 'airsim_dorsalnet_batch2_model.ckpt-3174400-2021-02-12 02-03-29.666899.pt'
 
-        checkpoint = torch.load(f'DorsalNet/{network}')
+        checkpoint = torch.load(
+            f"DorsalNet/{network}", map_location=torch.device("cpu")
+        )
 
         subnet_dict = {}
         for k, v in checkpoint.items():
@@ -73,6 +77,8 @@ def load_model(model_name, pretrained=True, dataset="k400"):
             )
 
         model = slowfast_4x16_r50(pretrained = True)
+    elif model_name == "R2PLUS1D":
+        model = r2plus1d.r2plus1d_r50(pretrained=pretrained, progress=True)
     elif pretrained == "cpc":
         model = torch.hub.load(
             "facebookresearch/pytorchvideo", model_name, pretrained=False
@@ -94,7 +100,16 @@ def load_model(model_name, pretrained=True, dataset="k400"):
             state_dict[new_key] = value
 
         model.load_state_dict(state_dict, strict=False)
-
+    elif model_name == "res_r50":
+        if dataset == "k400":
+            model = torch.hub.load(
+                "facebookresearch/pytorchvideo", "slow_r50", pretrained=pretrained
+            )
+        else:
+            model = torch.hub.load(
+                "facebookresearch/pytorchvideo", "slow_r50", pretrained=False
+            )
+            weight_path = "https://dl.fbaipublicfiles.com/pytorchvideo/model_zoo/ssv2/SLOW_8x8_R50.pyth"
     else:
         if dataset == "k400":
             model = torch.hub.load(
@@ -104,10 +119,7 @@ def load_model(model_name, pretrained=True, dataset="k400"):
             model = torch.hub.load(
                 "facebookresearch/pytorchvideo", model_name, pretrained=False
             )
-            if dataset == "ssv2":
-                weight_path = "https://dl.fbaipublicfiles.com/pytorchvideo/model_zoo/ssv2/SLOWFAST_8x8_R50.pyth"
-            elif dataset == "charades":
-                weight_path = "https://dl.fbaipublicfiles.com/pytorchvideo/model_zoo/charades/SLOWFAST_8x8_R50.pyth"
+            weight_path = "https://dl.fbaipublicfiles.com/pytorchvideo/model_zoo/ssv2/SLOWFAST_8x8_R50.pyth"
 
             state_dict = torch.hub.load_state_dict_from_url(
                 weight_path, map_location="cuda"
@@ -124,7 +136,16 @@ def load_model(model_name, pretrained=True, dataset="k400"):
     return model
 
 def apply_video_transform(model_name, video):
+    """
+    Apply video transformations based on the model name.
 
+    Args:
+        model_name (str): Name of the model.
+        video (EncodedVideo): Encoded video object.
+
+    Returns:
+        transformed_video (dict): Transformed video data.
+    """
     if 'slowfast' in model_name:
         if model_name == 'slowfast_r50' or model_name == 'slowfast_r101':
             side_size = 256
@@ -188,6 +209,26 @@ def apply_video_transform(model_name, video):
                 ]
             ),
         )
+    elif model_name == "res_r50":
+        side_size = 256
+        mean = [0.45, 0.45, 0.45]
+        std = [0.225, 0.225, 0.225]
+        crop_size = 256
+        num_frames = 8
+        sampling_rate = 8
+
+        transform = ApplyTransformToKey(
+            key="video",
+            transform=Compose(
+                [
+                    UniformTemporalSubsample(num_frames),
+                    Lambda(lambda x: x / 255.0),
+                    NormalizeVideo(mean, std),
+                    ShortSideScale(size=side_size),
+                    CenterCropVideo(crop_size),
+                ]
+            ),
+        )
     elif model_name == 'x3d_m':
         mean = [0.45, 0.45, 0.45]
         std = [0.225, 0.225, 0.225]
@@ -195,6 +236,26 @@ def apply_video_transform(model_name, video):
         crop_size = 256
         num_frames = 16
         sampling_rate = 5
+
+        transform = ApplyTransformToKey(
+            key="video",
+            transform=Compose(
+                [
+                    UniformTemporalSubsample(num_frames),
+                    Lambda(lambda x: x / 255.0),
+                    NormalizeVideo(mean, std),
+                    ShortSideScale(size=side_size),
+                    CenterCropVideo(crop_size),
+                ]
+            ),
+        )
+    elif model_name == "R2PLUS1D":
+        mean = [0.45, 0.45, 0.45]
+        std = [0.225, 0.225, 0.225]
+        side_size = 256
+        crop_size = 256
+        num_frames = 16
+        sampling_rate = 4
 
         transform =  ApplyTransformToKey(
             key="video",
@@ -315,11 +376,11 @@ def get_activation(model, video_inputs, layer):
 
 
 if __name__ == "__main__":
-    # Specify the desired model name ('slowfast_r50', 'x3d_m', 'slow_r50' or 'dorsalnet')
-    model_name = "slow_r50"
-    dataset = "k400"  # k400, ssv2, charades
+    # Specify the desired model name ('slowfast_r50', 'R2PLUS1D', 'x3d_m', 'slow_r50', 'res_r50' or 'dorsalnet')
+    model_name = "R2PLUS1D"
+    dataset = "k400"  # k400, ssv2
     status = "dynamic"  # 'dynamic'
-    pretrained = False  # True, False, cpc
+    pretrained = True  # True, False, cpc
     random_layer = ""  # '', 'slow/', 'fast/', 'fusion/'
 
     isslow = False

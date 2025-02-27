@@ -13,6 +13,15 @@ import torchvision.models as models
 from PIL import Image
 
 def load_model(model_name):
+    """
+    Load a pre-trained model with specified weights.
+
+    Args:
+        model_name (str): The name of the model to load.
+
+    Returns:
+        tuple: A tuple containing the model and its weights.
+    """
     weights = models.__dict__[f'{model_name}_Weights'].DEFAULT
     model = models.__dict__[model_name.lower()](weights=weights)
     model.eval()
@@ -47,6 +56,7 @@ def get_activation(model, video_inputs, layer, isLabel = False):
         model (torch.nn.Module): Pre-trained model.
         video_inputs (torch.Tensor): Video input tensor.
         layer (torch.nn.Module): The layer from which to extract activation.
+        isLabel (bool): Whether to print the labels of the predicted classes.
 
     Returns:
         numpy.ndarray: Activation values as a NumPy array.
