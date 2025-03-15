@@ -66,6 +66,9 @@ def load_MRI(filepath, hemisphere):
     dynamic_tstat = np.mean(data[:6, :, :], axis=1)
     static_tstat = np.mean(data[6:, :, :], axis=1)
 
+    dynamic_tstat = data[:6, -1]
+    static_tstat = data[6:, -1]
+
     # swap rows to the desired form
     dynamic_tstat = dynamic_tstat[[5, 0, 1, 4, 2, 3], :]
 
@@ -221,107 +224,111 @@ def filter_RDM(RDM, mode):
         RDM_tuple = tuple(RDM[i, i] for i in range(6))
         return RDM_tuple
 
-
-# List of models, correlation types, regions of interest, and hemispheres
-models = ["R2PLUS1D"]  # , 'slow_r50', 'dorsalnet']
-dataset = "k400"
-pretrained = True
-random_layer = ""  #'fusion/'
-isimagenet = False
-correlation_types = ["pearson"]
-ROIList = ["V1", "pFS", "LO", "EBA", "MTSTS", "infIPS", "SMG", "behavior"]
-hemispheres = ["all"]  # , 'rh', 'lh']
-names = {"": [""]}  # , '_anim' : ['_animate', '_inanimate']}
-
-if isimagenet:
-    models = ["alexnet", "resnet50", "densenet121", "vgg16"]
+if __name__ == "__main__":
+    # List of models, correlation types, regions of interest, and hemispheres
+    models = ["slow_r50", "slowfast_r50", "res_r50"]  # , 'slow_r50', 'dorsalnet']
+    dataset = "k400"
     pretrained = True
+    random_layer = ""  #'fusion/'
+    isimagenet = False
+    correlation_types = ["pearson"]
+    ROIList = ["V1", "pFS", "LO", "EBA", "MTSTS", "infIPS", "SMG", "behavior"]
+    hemispheres = ["all"]  # , 'rh', 'lh']
+    names = {"": [""]}  # , '_anim' : ['_animate', '_inanimate']}
 
-random_initialized = "random/" if random_layer != "" else ""
-imagenet = "imagenet/" if isimagenet else ""
-is_cpc = "cpc/" if pretrained == "cpc" else ""
-pretrained = "untrained/" if not pretrained else ""
-data = f"{dataset}/" if not (dataset == "k400") else ""
-# Loop through subjects
-for sub in range(2, 18):
-    if sub == 8:
-        continue
-    subject = f"S{sub:02d}"
+    if isimagenet:
+        models = ["alexnet", "resnet50", "densenet121", "vgg16"]
+        pretrained = True
 
-    # Loop through regions of interest, hemispheres, models, and correlation types
-    for region in ROIList:
-        for hem in tqdm(
-            hemispheres, desc=f"computing for subject {sub} in region {region}"
-        ):
-            for cor in correlation_types:
-                RDM_folder = f"result/fMRI RDM/{cor}/{region}"
-                if region == "behavior":
-                    if sub == 2:
-                        static_RDM, dynamic_RDM = load_behav()
+    random_initialized = "random/" if random_layer != "" else ""
+    imagenet = "imagenet/" if isimagenet else ""
+    is_cpc = "cpc/" if pretrained == "cpc" else ""
+    pretrained = "untrained/" if not pretrained else ""
+    data = f"{dataset}/" if not (dataset == "k400") else ""
+    # Loop through subjects
+    for sub in range(2, 18):
+        if sub == 8:
+            continue
+        subject = f"S{sub:02d}"
 
-                        if not os.path.exists(RDM_folder):
-                            os.makedirs(RDM_folder)
-                        with open(f"{RDM_folder}/RDM_dynamic.pkl", "wb") as File:
-                            pickle.dump(dynamic_RDM, File)
-                        with open(f"{RDM_folder}/RDM_static.pkl", "wb") as File:
-                            pickle.dump(static_RDM, File)
+        # Loop through regions of interest, hemispheres, models, and correlation types
+        for region in ROIList:
+            for hem in tqdm(
+                hemispheres, desc=f"computing for subject {sub} in region {region}"
+            ):
+                for cor in correlation_types:
+                    RDM_folder = f"result/fMRI RDM/{cor}/{region}"
+                    if region == "behavior":
+                        if sub == 2:
+                            static_RDM, dynamic_RDM = load_behav()
+
+                            if not os.path.exists(RDM_folder):
+                                os.makedirs(RDM_folder)
+                            with open(f"{RDM_folder}/RDM_dynamic.pkl", "wb") as File:
+                                pickle.dump(dynamic_RDM, File)
+                            with open(f"{RDM_folder}/RDM_static.pkl", "wb") as File:
+                                pickle.dump(static_RDM, File)
+                        else:
+                            continue
                     else:
-                        continue
-                else:
-                    # Create the MRI RDM if it doesn't exist
-                    if not os.path.exists(
-                        f"{RDM_folder}/{subject}_RDM_{hem}_dynamic.pkl"
-                    ):
-                        if not os.path.exists(RDM_folder):
-                            os.makedirs(RDM_folder)
+                        # Create the MRI RDM if it doesn't exist
+                        if not os.path.exists(
+                            f"{RDM_folder}/{subject}_RDM_{hem}_dynamic.pkl"
+                        ):
+                            if not os.path.exists(RDM_folder):
+                                os.makedirs(RDM_folder)
 
-                        # Construct the file path for MRI data
-                        filepath = f"../../content/drive/MyDrive/motion_representation/fMRI/{subject}/GCSS_noOverlap_{region}_{hem}.mat"
-                        dynamic_tstat, static_tstat = load_MRI(filepath, hem)
+                            # Construct the file path for MRI data
+                            filepath = (
+                                f"fMRI/{subject}/GCSS_noOverlap_{region}_{hem}.mat"
+                            )
+                            dynamic_tstat, static_tstat = load_MRI(filepath, hem)
 
-                        # calculate RDM from tstat
-                        dynamic_RDM = calculate_RDM(dynamic_tstat, cor)
-                        static_RDM = calculate_RDM(static_tstat, cor)
+                            # calculate RDM from tstat
+                            dynamic_RDM = calculate_RDM(dynamic_tstat, cor)
+                            static_RDM = calculate_RDM(static_tstat, cor)
 
-                        with open(
-                            f"{RDM_folder}/{subject}_RDM_{hem}_dynamic.pkl", "wb"
-                        ) as File:
-                            pickle.dump(dynamic_RDM, File)
-                        with open(
-                            f"{RDM_folder}/{subject}_RDM_{hem}_static.pkl", "wb"
-                        ) as File:
-                            pickle.dump(static_RDM, File)
-                    else:
-                        with open(
-                            f"{RDM_folder}/{subject}_RDM_{hem}_dynamic.pkl", "rb"
-                        ) as File:
-                            dynamic_RDM = pickle.load(File)
-                        with open(
-                            f"{RDM_folder}/{subject}_RDM_{hem}_static.pkl", "rb"
-                        ) as File:
-                            static_RDM = pickle.load(File)
-
-                for model_name in models:
-                    # Construct the save folder path
-                    save_folder = f"result/RSA/{imagenet}{data}{is_cpc}{pretrained}{random_initialized}{model_name}/{cor}/{region}/{random_layer}"
-
-                    # Create the save folder if it doesn't exist
-                    if not os.path.exists(save_folder):
-                        os.makedirs(save_folder)
-
-                    for m, (mode, name) in enumerate(names.items()):
-                        dyn_RDM = filter_RDM(dynamic_RDM, mode)
-                        stat_RDM = filter_RDM(static_RDM, mode)
-
-                        model_path = f"result/model RDM/{imagenet}{data}{is_cpc}{pretrained}{random_initialized}dynamic/{random_layer}{cor}_RDM_{model_name}.pkl"
-                        with open(model_path, "rb") as pickle_file:
-                            model_RDM_dyn = pickle.load(pickle_file)
-
-                        for ind, nam in enumerate(name):
-                            # Generate dynamic RSA values
-                            RSA = calculate_RSA_layers(model_RDM_dyn, dyn_RDM[ind], mode, ind)
                             with open(
-                                f"{save_folder}{subject}_{hem}_dynamic_RSA{nam}.pkl",
-                                "wb",
+                                f"{RDM_folder}/{subject}_RDM_{hem}_dynamic.pkl", "wb"
                             ) as File:
-                                pickle.dump(RSA, File)
+                                pickle.dump(dynamic_RDM, File)
+                            with open(
+                                f"{RDM_folder}/{subject}_RDM_{hem}_static.pkl", "wb"
+                            ) as File:
+                                pickle.dump(static_RDM, File)
+                        else:
+                            with open(
+                                f"{RDM_folder}/{subject}_RDM_{hem}_dynamic.pkl", "rb"
+                            ) as File:
+                                dynamic_RDM = pickle.load(File)
+                            with open(
+                                f"{RDM_folder}/{subject}_RDM_{hem}_static.pkl", "rb"
+                            ) as File:
+                                static_RDM = pickle.load(File)
+
+                    for model_name in models:
+                        # Construct the save folder path
+                        save_folder = f"result/RSA/{imagenet}{data}{is_cpc}{pretrained}{random_initialized}{model_name}/{cor}/{region}/{random_layer}"
+
+                        # Create the save folder if it doesn't exist
+                        if not os.path.exists(save_folder):
+                            os.makedirs(save_folder)
+
+                        for m, (mode, name) in enumerate(names.items()):
+                            dyn_RDM = filter_RDM(dynamic_RDM, mode)
+                            stat_RDM = filter_RDM(static_RDM, mode)
+
+                            model_path = f"result/model RDM/{imagenet}{data}{is_cpc}{pretrained}{random_initialized}dynamic/{random_layer}{cor}_RDM_{model_name}.pkl"
+                            with open(model_path, "rb") as pickle_file:
+                                model_RDM_dyn = pickle.load(pickle_file)
+
+                            for ind, nam in enumerate(name):
+                                # Generate dynamic RSA values
+                                RSA = calculate_RSA_layers(
+                                    model_RDM_dyn, dyn_RDM[ind], mode, ind
+                                )
+                                with open(
+                                    f"{save_folder}{subject}_{hem}_dynamic_RSA{nam}.pkl",
+                                    "wb",
+                                ) as File:
+                                    pickle.dump(RSA, File)

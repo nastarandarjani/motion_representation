@@ -377,7 +377,7 @@ def get_activation(model, video_inputs, layer):
 
 if __name__ == "__main__":
     # Specify the desired model name ('slowfast_r50', 'R2PLUS1D', 'x3d_m', 'slow_r50', 'res_r50' or 'dorsalnet')
-    model_name = "R2PLUS1D"
+    model_name = "slowfast_r50"
     dataset = "k400"  # k400, ssv2
     status = "dynamic"  # 'dynamic'
     pretrained = True  # True, False, cpc
