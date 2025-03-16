@@ -230,7 +230,7 @@ if __name__ == "__main__":
     isimagenet = False
     correlation_types = ["pearson"]
     ROIList = ["V1", "pFS", "LO", "EBA", "MTSTS", "infIPS", "SMG", "behavior"]
-    hemispheres = ["all"]  # , 'rh', 'lh']
+    hemispheres = ["all", "rh", "lh"]
     names = {"": [""]}  # , '_anim' : ['_animate', '_inanimate']}
 
     if isimagenet:

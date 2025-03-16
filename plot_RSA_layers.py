@@ -37,7 +37,7 @@ def bootstraping(data_A, data_B):
     return significant
 
 
-def load_rsa_data(region, model_name, data_path):
+def load_rsa_data(region, model_name, data_path, hem):
     folder = f"result/RSA/{data_path}{model_name}/pearson/{region}/"
     data = []
 
@@ -50,7 +50,7 @@ def load_rsa_data(region, model_name, data_path):
             if sub == 8:
                 continue
             subject = f"S{sub:02d}"
-            with open(f"{folder}{subject}_all_dynamic_RSA.pkl", "rb") as File:
+            with open(f"{folder}{subject}_{hem}_dynamic_RSA.pkl", "rb") as File:
                 RSA = pickle.load(File)
             data.append([tup[1] for tup in RSA.values()])
 
@@ -152,7 +152,7 @@ def compute_noise_ceiling(region):
     return np.mean(correlations), stats.sem(correlations)
 
 
-def main(color):
+def main(hem, color):
     for datas in dataset:
         fig, axes = plt.subplots(
             2,
@@ -177,7 +177,7 @@ def main(color):
                     model_name = "slow_r50"
                 else:
                     model_name = "res_r50"
-                data, RSA = load_rsa_data(region, model_name, data_path)
+                data, RSA = load_rsa_data(region, model_name, data_path, hem)
                 filtered_list = filter_rsa_data(RSA, cond)
 
                 indices = [
@@ -269,7 +269,7 @@ def main(color):
         fig.supxlabel("Layers", fontweight="bold")
         fig.subplots_adjust(bottom=0.12)
 
-    plt.savefig(f"plot/{datas}_{condition}.png", dpi=300, bbox_inches="tight")
+    plt.savefig(f"plot/{datas}_{hem}_{condition}.png", dpi=300, bbox_inches="tight")
 
 
 if __name__ == "__main__":
@@ -288,13 +288,14 @@ if __name__ == "__main__":
     )
 
     dataset = ["k400"]
+    hem = "lh"
 
     # condition = ["SF-S", "SF-F"]
     # color = ["tab:orange", "tab:blue"]
 
-    condition = ["SF-S-noF", "SF-S"]
-    color = ["tab:green", "tab:orange"]
+    # condition = ["SF-S-noF", "SF-S"]
+    # color = ["tab:green", "tab:orange"]
 
-    # condition = ["SF-S-noF", "S-only"]
-    # color = ["tab:green", "tab:red"]
-    main(color)
+    condition = ["SF-S-noF", "S-only"]
+    color = ["tab:green", "tab:red"]
+    main(hem, color)
