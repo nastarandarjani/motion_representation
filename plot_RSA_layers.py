@@ -3,9 +3,9 @@ import pickle
 import numpy as np
 from scipy import stats
 import os
-from statsmodels.stats.multitest import multipletests
 import itertools
 from scipy.stats import kendalltau
+from mne.stats import permutation_cluster_test
 
 # Get the directory where the script is located
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -15,34 +15,26 @@ os.chdir(script_dir)
 ROIList = ["V1", "pFS", "LO", "EBA", "MTSTS", "infIPS", "SMG", "behavior"]
 
 
-def bootstraping(data_A, data_B, num_samples=1000):
-    def my_statistic(sample1, sample2, axis=-1):
-        return np.mean(sample1, axis=axis) - np.mean(sample2, axis=axis)
+def bootstraping(data_A, data_B):
+    def my_statistic(data_A, data_B):
+        return np.mean(data_A, axis=0) - np.mean(data_B, axis=0)
 
-    p_values = []
-    for i in range(data_A.shape[1]):
-        observed_diff = my_statistic(data_A[:, i], data_B[:, i])
+    T_obs, clusters, cluster_p_values, _ = permutation_cluster_test(
+        [data_A, data_B],
+        n_permutations=1000,
+        tail=0,
+        stat_fun=my_statistic,
+        out_type="mask",
+        threshold=0.1,
+        verbose=False,
+    )
 
-        # Combine and create null distribution
-        combined = np.concatenate([data_A[:, i], data_B[:, i]])
-        null_distribution = []
+    significant = np.zeros(T_obs.shape, dtype=bool)
+    for i, p_value in enumerate(cluster_p_values):
+        if p_value < 0.05:
+            significant[clusters[i]] = True
 
-        for _ in range(num_samples):
-            np.random.shuffle(combined)
-            sample1 = combined[: len(data_A[:, i])]
-            sample2 = combined[len(data_A[:, i]) :]
-            null_distribution.append(my_statistic(sample1, sample2))
-
-        null_distribution = np.array(null_distribution)
-
-        # Compute two-tailed p-value
-        p_value = np.mean(np.abs(null_distribution) >= np.abs(observed_diff))
-        p_values.append(p_value)
-
-    # Apply FDR correction (Benjamini-Hochberg)
-    rejected, fdr_corrected_p, _, _ = multipletests(p_values, method="fdr_bh")
-
-    return p_values, fdr_corrected_p, rejected
+    return significant
 
 
 def load_rsa_data(region, model_name, data_path):
@@ -157,7 +149,7 @@ def compute_noise_ceiling(region):
         )
         correlations.append(correlation)
 
-    return ((np.min(correlations), np.max(correlations)), np.mean(correlations))
+    return np.mean(correlations), stats.sem(correlations)
 
 
 def main(color):
@@ -201,11 +193,11 @@ def main(color):
                     filtered_data = np.mean(filtered_data, axis=0)
 
                     if cond == condition[0]:
-                        (nc_low, nc_high), nc_avg = compute_noise_ceiling(region)
+                        nc_avg, nc_sem = compute_noise_ceiling(region)
                         ax.fill_between(
                             range(len(filtered_data)),
-                            nc_low,
-                            nc_high,
+                            nc_avg - nc_sem,
+                            nc_avg + nc_sem,
                             color="gray",
                             alpha=0.2,
                         )
@@ -217,13 +209,13 @@ def main(color):
                         )
                         ax.plot(
                             range(len(filtered_data)),
-                            np.ones((len(filtered_data))) * nc_high,
+                            np.ones((len(filtered_data))) * (nc_avg - nc_sem),
                             color="gray",
                             lw=0.2,
                         )
                         ax.plot(
                             range(len(filtered_data)),
-                            np.ones((len(filtered_data))) * nc_low,
+                            np.ones((len(filtered_data))) * (nc_avg + nc_sem),
                             color="gray",
                             lw=0.2,
                         )
@@ -259,9 +251,7 @@ def main(color):
                 combinations = list(itertools.combinations(range(len(condition)), 2))
                 sig = np.zeros((len(combinations), len(filtered_data)))
                 for count, ind in enumerate(combinations):
-                    _, _, sig[count, :] = bootstraping(
-                        ttest_data[ind[0]], ttest_data[ind[1]]
-                    )
+                    sig[count, :] = bootstraping(ttest_data[ind[0]], ttest_data[ind[1]])
                 plot_significance(ax, sig, count)
 
                 h, l = ax.get_legend_handles_labels()
@@ -299,11 +289,11 @@ if __name__ == "__main__":
 
     dataset = ["k400"]
 
-    condition = ["SF-S", "SF-F"]
-    color = ["tab:orange", "tab:blue"]
+    # condition = ["SF-S", "SF-F"]
+    # color = ["tab:orange", "tab:blue"]
 
-    # condition = ["SF-S-noF", "SF-S"]
-    # color = ["tab:green", "tab:orange"]
+    condition = ["SF-S-noF", "SF-S"]
+    color = ["tab:green", "tab:orange"]
 
     # condition = ["SF-S-noF", "S-only"]
     # color = ["tab:green", "tab:red"]

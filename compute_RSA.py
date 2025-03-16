@@ -66,9 +66,6 @@ def load_MRI(filepath, hemisphere):
     dynamic_tstat = np.mean(data[:6, :, :], axis=1)
     static_tstat = np.mean(data[6:, :, :], axis=1)
 
-    dynamic_tstat = data[:6, -1]
-    static_tstat = data[6:, -1]
-
     # swap rows to the desired form
     dynamic_tstat = dynamic_tstat[[5, 0, 1, 4, 2, 3], :]
 
