@@ -382,6 +382,10 @@ if __name__ == "__main__":
     status = "dynamic"  # 'dynamic'
     pretrained = True  # True, False, cpc
     random_layer = ""  # '', 'slow/', 'fast/', 'fusion/'
+    folderr = "BMD"  # "stimuli"
+
+    if folderr == "BMD":
+        folder = "/Users/nastaran/ds005165/derivatives/stimulus_set/stimuli/test/"
 
     isslow = False
     if model_name == 'slow_r50':
@@ -390,7 +394,12 @@ if __name__ == "__main__":
 
     # List the files in the folder with the proper prefix
     prefix = 'processed_' if status == 'dynamic' else 'img_'
-    processed_videos = [file for file in sorted(os.listdir('stimuli')) if file.startswith(prefix)]
+    if folder == "stimuli":
+        processed_videos = [
+            file for file in sorted(os.listdir(folder)) if file.startswith(prefix)
+        ]
+    else:
+        processed_videos = sorted(os.listdir(folder))
 
     # Load the pre-trained model
     model = load_model(model_name, pretrained=pretrained, dataset=dataset)
@@ -432,7 +441,7 @@ if __name__ == "__main__":
     # Transform and store all videos
     transformed_videos = []
     for video_file in tqdm(processed_videos, desc='load data'):
-        video_path = os.path.join('stimuli', video_file)
+        video_path = os.path.join(folder, video_file)
         transformed_video = process_video(model_name, video_path)
         transformed_videos.append(transformed_video)
 
@@ -466,17 +475,18 @@ if __name__ == "__main__":
         del batch_videos
 
         # average across category
-        activations = activations.reshape(6, 6, -1)
-        activations = np.mean(activations, axis = 1)
+        if folder == "stimuli":
+            activations = activations.reshape(6, 6, -1)
+            activations = np.mean(activations, axis=1)
 
         pearson_RDM[model_layer] = 1 - np.corrcoef(activations)
 
-        cor, _ = spearmanr(activations, axis=1)
-        spearman_RDM[model_layer] = 1 - cor
-        del cor
+        # cor, _ = spearmanr(activations, axis=1)
+        # spearman_RDM[model_layer] = 1 - cor
+        # del cor
 
-        euclidean_RDM[model_layer] = euclidean_distances(activations)
-        del activations
+        # euclidean_RDM[model_layer] = euclidean_distances(activations)
+        # del activations
 
     if isslow:
         model_name = 'slow_r50'
@@ -486,17 +496,17 @@ if __name__ == "__main__":
     pretrained = "untrained/" if not pretrained else ""
     data = f"{dataset}/" if not (dataset == "k400") else ""
     # Save the RDM dictionary to a pickle file
-    file_path = f"result/model RDM/{data}{is_cpc}{pretrained}{random_initialized}{status}/{random_layer}pearson_RDM_{model_name}.pkl"
+    file_path = f"result/model RDM/{folderr}/{data}{is_cpc}{pretrained}{random_initialized}{status}/{random_layer}pearson_RDM_{model_name}.pkl"
     print(file_path)
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
     with open(file_path, 'wb') as File:
         pickle.dump(pearson_RDM, File)
 
-    file_path = f"result/model RDM/{data}{is_cpc}{pretrained}{random_initialized}{status}/{random_layer}spearman_RDM_{model_name}.pkl"
-    with open(file_path, 'wb') as File:
-        pickle.dump(spearman_RDM, File)
+    # file_path = f"result/model RDM/{data}{is_cpc}{pretrained}{random_initialized}{status}/{random_layer}spearman_RDM_{model_name}.pkl"
+    # with open(file_path, 'wb') as File:
+    #     pickle.dump(spearman_RDM, File)
 
-    file_path = f"result/model RDM/{data}{is_cpc}{pretrained}{random_initialized}{status}/{random_layer}euclidean_RDM_{model_name}.pkl"
-    with open(file_path, 'wb') as File:
-        pickle.dump(euclidean_RDM, File)
+    # file_path = f"result/model RDM/{data}{is_cpc}{pretrained}{random_initialized}{status}/{random_layer}euclidean_RDM_{model_name}.pkl"
+    # with open(file_path, 'wb') as File:
+    #     pickle.dump(euclidean_RDM, File)

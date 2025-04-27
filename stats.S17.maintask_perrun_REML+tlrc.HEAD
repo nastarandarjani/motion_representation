@@ -1,0 +1,509 @@
+
+type = string-attribute
+name = HISTORY_NOTE
+count = 4830
+'[robertsor@thalamos.nimh.nih.gov: Mon Jan 27 14:30:54 2020] Matrix source: ; 3dDeconvolve -input pb07.S17.maintask_perrun.r01.scale+orig.HEAD pb07.S17.maintask_perrun.r02.scale+orig.HEAD pb07.S17.maintask_perrun.r03.scale+orig.HEAD pb07.S17.maintask_perrun.r04.scale+orig.HEAD pb07.S17.maintask_perrun.r05.scale+orig.HEAD pb07.S17.maintask_perrun.r06.scale+orig.HEAD pb07.S17.maintask_perrun.r07.scale+orig.HEAD pb07.S17.maintask_perrun.r08.scale+orig.HEAD pb07.S17.maintask_perrun.r09.scale+orig.HEAD pb07.S17.maintask_perrun.r10.scale+orig.HEAD pb07.S17.maintask_perrun.r11.scale+orig.HEAD pb07.S17.maintask_perrun.r12.scale+orig.HEAD -censor censor_S17.maintask_perrun_combined_2.1D -ortvec mot_demean.r01.1D mot_demean_r01 -ortvec mot_demean.r02.1D mot_demean_r02 -ortvec mot_demean.r03.1D mot_demean_r03 -ortvec mot_demean.r04.1D mot_demean_r04 -ortvec mot_demean.r05.1D mot_demean_r05 -ortvec mot_demean.r06.1D mot_demean_r06 -ortvec mot_demean.r07.1D mot_demean_r07 -ortvec mot_demean.r08.1D mot_demean_r08 -ortvec mot_demean.r09.1D mot_demean_r09 -ortvec mot_demean.r10.1D mot_demean_r10 -ortvec mot_demean.r11.1D mot_demean_r11 -ortvec mot_demean.r12.1D mot_demean_r12 -polort 2 -num_stimts 12 -stim_times_IM 1 stimuli/H_D_timings.txt 'BLOCK(12,1)' -stim_label 1 H_D -stim_times_IM 2 stimuli/H_S_timings.txt 'BLOCK(12,1)' -stim_label 2 H_S -stim_times_IM 3 stimuli/M_D_timings.txt 'BLOCK(12,1)' -stim_label 3 M_D -stim_times_IM 4 stimuli/M_S_timings.txt 'BLOCK(12,1)' -stim_label 4 M_S -stim_times_IM 5 stimuli/R_D_timings.txt 'BLOCK(12,1)' -stim_label 5 R_D -stim_times_IM 6 stimuli/R_S_timings.txt 'BLOCK(12,1)' -stim_label 6 R_S -stim_times_IM 7 stimuli/T_D_timings.txt 'BLOCK(12,1)' -stim_label 7 T_D -stim_times_IM 8 stimuli/T_S_timings.txt 'BLOCK(12,1)' -stim_label 8 T_S -stim_times_IM 9 stimuli/P_D_timings.txt 'BLOCK(12,1)' -stim_label 9 P_D -stim_times_IM 10 stimuli/P_S_timings.txt 'BLOCK(12,1)' -stim_label 10 P_S -stim_times_IM 11 stimuli/B_D_timings.txt 'BLOCK(12,1)' -stim_label 11 B_D -stim_times_IM 12 stimuli/B_S_timings.txt 'BLOCK(12,1)' -stim_label 12 B_S -jobs 12 -gltsym 'SYM: 0.333*H_D +0.333*M_D +0.333*R_D -0.333*T_D -0.333*P_D       -0.333*B_D' -glt_label 1 DYN.anim-inanim -gltsym 'SYM: 0.333*H_S +0.333*M_S +0.333*R_S -0.333*T_S -0.333*P_S       -0.333*B_S' -glt_label 2 STAT.anim-inanim -gltsym 'SYM: 0.08333*H_D +0.08333*H_S +0.08333*M_D +0.08333*M_S          +0.08333*R_D +0.08333*R_S +0.08333*T_D +0.08333*T_S +0.08333*P_D          +0.08333*P_S +0.08333*B_D +0.08333*B_S' -glt_label 3 mean.Allcond -fout -tout -x1D X.xmat.1D -xjpeg X.jpg -x1D_uncensored X.nocensor.xmat.1D -errts errts.S17.maintask_perrun -bucket stats.S17.maintask_perrun\n[robertsor@thalamos.nimh.nih.gov: Mon Jan 27 14:30:54 2020] {AFNI_20.0.02:linux_centos_7_64} 3dREMLfit -matrix X.xmat.1D -input 'pb07.S17.maintask_perrun.r01.scale+orig.HEAD pb07.S17.maintask_perrun.r02.scale+orig.HEAD pb07.S17.maintask_perrun.r03.scale+orig.HEAD pb07.S17.maintask_perrun.r04.scale+orig.HEAD pb07.S17.maintask_perrun.r05.scale+orig.HEAD pb07.S17.maintask_perrun.r06.scale+orig.HEAD pb07.S17.maintask_perrun.r07.scale+orig.HEAD pb07.S17.maintask_perrun.r08.scale+orig.HEAD pb07.S17.maintask_perrun.r09.scale+orig.HEAD pb07.S17.maintask_perrun.r10.scale+orig.HEAD pb07.S17.maintask_perrun.r11.scale+orig.HEAD pb07.S17.maintask_perrun.r12.scale+orig.HEAD' -fout -tout -Rbuck stats.S17.maintask_perrun_REML -Rvar stats.S17.maintask_perrun_REMLvar -Rerrts errts.S17.maintask_perrun_REML -verb\n[robertsor@thalamos.nimh.nih.gov: Mon Jan 27 15:38:41 2020] {AFNI_20.0.02:linux_centos_7_64} 3drefit -atrstring AFNI_CLUSTSIM_NN1_1sided file:files_ClustSim/ClustSim.ACF.NN1_1sided.niml -atrstring AFNI_CLUSTSIM_MASK file:files_ClustSim/ClustSim.ACF.mask -atrstring AFNI_CLUSTSIM_NN2_1sided file:files_ClustSim/ClustSim.ACF.NN2_1sided.niml -atrstring AFNI_CLUSTSIM_NN3_1sided file:files_ClustSim/ClustSim.ACF.NN3_1sided.niml -atrstring AFNI_CLUSTSIM_NN1_2sided file:files_ClustSim/ClustSim.ACF.NN1_2sided.niml -atrstring AFNI_CLUSTSIM_NN2_2sided file:files_ClustSim/ClustSim.ACF.NN2_2sided.niml -atrstring AFNI_CLUSTSIM_NN3_2sided file:files_ClustSim/ClustSim.ACF.NN3_2sided.niml -atrstring AFNI_CLUSTSIM_NN1_bisided file:files_ClustSim/ClustSim.ACF.NN1_bisided.niml -atrstring AFNI_CLUSTSIM_NN2_bisided file:files_ClustSim/ClustSim.ACF.NN2_bisided.niml -atrstring AFNI_CLUSTSIM_NN3_bisided file:files_ClustSim/ClustSim.ACF.NN3_bisided.niml stats.S17.maintask_perrun+orig stats.S17.maintask_perrun_REML+orig\n[robertsor@thalamos.nimh.nih.gov: Thu Feb 27 19:36:19 2020] {AFNI_20.0.18:linux_centos_7_64} 3dNwarpApply -master anat_final_tlrc.S17.maintask_perrun+tlrc -dxyz 3 -source stats.S17.maintask_perrun_REML+orig -nwarp 'anat.un.aff.qw_WARP.nii anat.un.aff.Xat.1D' -prefix ../S17.maintask_perrun_tlrc.results/stats.S17.maintask_perrun_REML~
+
+type = string-attribute
+name = TYPESTRING
+count = 15
+'3DIM_HEAD_ANAT~
+
+type = string-attribute
+name = IDCODE_STRING
+count = 27
+'XYZ_Nk8fNX1b-SfI3WSTjlBtZw~
+
+type = string-attribute
+name = IDCODE_DATE
+count = 25
+'Thu Feb 27 19:36:09 2020~
+
+type = integer-attribute
+name = SCENE_DATA
+count = 8
+ 2 11 0 -999 -999
+ -999 -999 -999
+
+type = string-attribute
+name = LABEL_1
+count = 5
+'zyxt~
+
+type = string-attribute
+name = LABEL_2
+count = 5
+'zyxt~
+
+type = string-attribute
+name = DATASET_NAME
+count = 5
+'zyxt~
+
+type = integer-attribute
+name = ORIENT_SPECIFIC
+count = 3
+ 0 3 4
+
+type  = float-attribute
+name  = ORIGIN
+count = 3
+          -79.5          -79.5          -63.5
+
+type  = float-attribute
+name  = DELTA
+count = 3
+              3              3              3
+
+type  = float-attribute
+name  = IJK_TO_DICOM
+count = 12
+              3              0              0          -79.5              0
+              3              0          -79.5              0              0
+              3          -63.5
+
+type  = float-attribute
+name  = IJK_TO_DICOM_REAL
+count = 12
+              3              0              0          -79.5              0
+              3              0          -79.5              0              0
+              3          -63.5
+
+type  = float-attribute
+name  = BRICK_STATS
+count = 620
+              0       8.899555      -29.38255       51.48719      -5.076838
+       7.609166      -44.58191       19.69311      -4.891686        6.63683
+       -24.0802       28.20301      -4.165093       4.006019      -26.35872
+       34.11295      -5.061863       7.385798      -25.03292       28.97039
+      -4.508961       5.953235      -26.58996       22.66234      -4.501058
+        7.01252      -26.03809       30.27739      -4.342196       6.453508
+      -48.89671       48.40362      -6.711202       5.952505       -59.8203
+       38.86041      -6.812106       6.473272      -28.01499       47.53489
+      -7.660366       9.971613      -55.43394       89.60993      -5.292768
+        6.61664      -51.85098       48.70803      -5.959662       6.474221
+              0       33.37114      -23.91273       54.71322       -4.63084
+       5.805753      -25.66438       51.08904      -6.618535       5.517002
+      -23.42534       64.38231      -4.197563       6.835212      -23.29977
+       19.60898      -5.955994       4.954931      -31.20577       58.60073
+      -4.520584       5.828778      -29.41179       22.82457      -5.423979
+       4.493583      -22.38818        42.6532      -4.732691       4.990598
+      -38.80895       41.97786      -5.809684       5.666853      -24.15112
+       37.15941      -5.649014       4.542261      -25.77902       24.64097
+      -4.660087       6.043822       -28.9867       26.20263      -4.674498
+       5.342774       -47.3013       70.81639      -6.769793       5.204609
+              0       16.48736      -31.28598       30.35159      -4.928273
+       6.051189      -54.45341       83.79282      -6.017715        6.09181
+      -37.89472       27.42279      -4.060914       5.629118      -42.79074
+       53.20393      -5.419531       7.452741      -25.40293       29.50763
+      -4.772273       4.160918      -31.94311       29.84266      -5.520301
+       6.009192      -25.97588       48.80655      -7.410985       5.937258
+      -27.34219       32.99482      -4.426576       5.471732      -41.71853
+        38.6976      -5.194888       6.189846      -58.50688       49.23139
+        -6.2148        6.41261      -42.51078       30.73506      -4.567946
+       6.373456      -36.25998       35.20298      -4.585103       5.150945
+              0       24.86962      -40.85288       44.08041      -4.309593
+       5.666862       -29.2102        35.2934       -4.81011       4.572056
+      -30.26615       45.43327      -5.288615        6.83923      -25.77623
+       71.25929      -4.160939       5.354332      -27.26067       29.68598
+      -5.056096        5.54996      -39.53586       55.67813      -6.665804
+       8.016026      -20.49832       31.67345      -5.608055        6.33396
+      -25.12572       49.86649      -4.624676        5.30802      -27.21284
+       37.13005      -4.595384         5.1071      -40.90697       58.93179
+      -5.407167       6.885772      -26.04711       50.51429      -4.993882
+       6.023321      -23.55391       27.60676       -4.76193       6.253939
+              0       22.41467      -31.18468       35.23734      -5.495832
+       6.783188      -39.86933       40.76362      -6.435431       6.143787
+      -23.16061       19.64924      -4.041493       5.364665      -34.73292
+       28.49584      -4.677912       4.847173      -45.08258       33.84924
+      -3.825387       5.262271      -65.44725       71.40896      -6.000625
+        6.01738      -24.53668       35.65884      -4.916365       6.150113
+      -27.82356        31.3599      -5.498509       4.629688      -31.00616
+        24.2055      -6.964385       5.181252      -33.12598       62.09064
+       -4.59304       6.033391      -24.14181       22.52984      -4.413249
+       5.827127      -26.28789       39.10445      -6.827795       5.490632
+              0       23.01105      -29.26234       32.54496      -6.667145
+       8.636567      -24.17343       29.87896      -4.141674       6.111565
+      -22.80914       40.96859      -4.287095       4.911461      -54.77867
+       52.51554      -7.512487       6.698235      -59.47565       88.70097
+      -4.928588       5.056305      -22.56101       31.25967      -4.287769
+       4.539325      -58.22507       71.35102      -5.755817       7.043982
+      -27.60512       27.83753      -4.624654       4.797582      -33.20266
+       49.46637      -6.064103       5.690902      -39.44374       33.99081
+      -5.879495       6.368629      -32.67521        25.1729       -4.96278
+       6.002102      -38.02311       53.35978      -4.891071       5.934259
+              0        20.4548      -40.52676       41.75472      -4.440188
+       6.874371      -29.58363       58.69906      -4.590744       6.179629
+      -40.77832       53.99776      -6.474147       7.310824      -38.97022
+        37.2751      -4.312829         6.3814      -32.92477       26.92572
+      -3.940856       4.965402      -36.82438       72.37507      -4.574512
+       5.463528      -65.40646       46.12805      -8.572137       7.313315
+      -33.68098       48.53527      -4.829169        4.37999      -28.09964
+       35.68101      -4.082104        4.82129      -24.28408       24.80767
+      -7.025312       7.505604      -30.91734       31.94118      -5.227809
+       5.187187      -41.34996       60.23429      -6.327505       6.017042
+              0       24.24615      -22.73351       26.45782       -4.84173
+       6.716117      -27.52407       49.98959      -4.501721       6.382036
+      -24.33874        21.8368      -4.566714       5.583488      -23.83957
+       32.72814      -4.341203       5.794081      -34.32277       54.86335
+      -5.412829       6.151181      -33.82871       31.65147       -6.27981
+       4.125513      -39.51617        82.9774      -7.076258       5.757469
+      -37.67542       60.09211      -6.791642       6.811489      -32.19034
+       25.84541      -6.714256       5.447879      -25.64985       46.27668
+      -11.27767       13.41527      -25.87197       44.29624      -6.086401
+       4.474267       -25.8005        28.9036      -6.566945       6.743003
+              0       20.01466       -21.3377       25.64184       -4.68024
+       5.660266      -29.20238       39.26317      -4.976505       4.811262
+      -24.45734       32.88697      -4.581357       6.740102      -23.41735
+       24.89325      -4.011176       5.989327      -24.42559       54.90663
+      -4.393504       4.478559      -29.62297       38.99591      -7.169013
+       5.517986      -44.85289       31.16423      -6.294934        4.86235
+      -43.41867       75.29736      -5.242252       6.890221      -32.25876
+       43.70136       -5.89605       5.113027      -32.89324       36.52513
+      -8.943088       10.12985      -33.09146       18.77339      -4.328774
+       5.211567      -38.85526       64.14587      -6.127573       5.526332
+              0       20.37659      -21.65201       32.77829      -4.572911
+       4.684451      -28.77004       36.04174      -4.410833        5.86336
+      -27.02391       45.40152      -5.153956       7.047149      -82.36737
+       65.94881      -4.616899        4.73139      -37.59623       29.37947
+      -4.283931       4.148758      -27.46115       26.00506      -4.693892
+       5.131668      -27.69757       28.95958      -5.893481       4.533093
+      -20.12138        18.5537      -5.928133       5.602926      -49.52699
+       30.83893      -6.212434       5.858685      -20.51108       40.99968
+      -7.203146        8.64268      -62.15018       119.1405      -6.202704
+        6.53099      -34.37425       35.74519      -7.406431       5.621327
+              0       14.77921       -29.4642       44.91511      -4.785674
+       5.863104      -52.60756       66.11224        -4.8523        5.71108
+      -26.55312       26.28689      -4.321955       4.620371       -35.4858
+        43.6491      -6.090772       5.691738      -44.97622       53.39649
+      -5.523327       6.027083      -39.84541       23.77437       -5.05132
+       5.141931      -35.79641       33.60422      -5.663095       6.433599
+      -27.54978       42.73507      -5.294959       6.602094      -33.66362
+       48.43692      -4.407097       5.290838      -51.95031        64.7849
+      -4.806219       4.598214      -23.38296       27.29852       -5.50311
+       5.397251      -33.35062       39.70583      -8.098202        4.45314
+              0       19.83701      -36.44471       22.49801      -4.816893
+       6.142659      -18.05769       42.59548      -4.133055       4.357861
+      -25.76587        39.7187      -4.237612       5.995011      -28.02601
+       46.27477      -4.327945       4.822764      -22.05819       26.01526
+      -4.450523       4.606035      -21.80408       35.62679      -4.658143
+       4.788453      -57.71441       71.66631      -4.875363       6.395851
+      -30.57675        19.2421      -4.141601       4.060017      -20.69085
+       39.22639      -5.107966       4.240397      -45.66669       66.05214
+      -6.213928       9.360115      -36.44036       49.31896      -5.322128
+       4.939653      -24.84747       28.94057      -4.450429        4.92504
+              0       10.40005      -127.5145        94.1422        -4.6912
+       5.352694              0       26.40065      -48.76227       62.86042
+      -3.927677       8.140129              0       66.39026      -155.1664
+        190.881      -14.35634       33.15979              0       1097.151
+
+type = integer-attribute
+name = DATASET_RANK
+count = 8
+ 3 310 0 0 0
+ 0 0 0
+
+type = integer-attribute
+name = DATASET_DIMENSIONS
+count = 5
+ 54 64 50 0 0
+
+type = integer-attribute
+name = BRICK_TYPES
+count = 310
+ 3 3 3 3 3
+ 3 3 3 3 3
+ 3 3 3 3 3
+ 3 3 3 3 3
+ 3 3 3 3 3
+ 3 3 3 3 3
+ 3 3 3 3 3
+ 3 3 3 3 3
+ 3 3 3 3 3
+ 3 3 3 3 3
+ 3 3 3 3 3
+ 3 3 3 3 3
+ 3 3 3 3 3
+ 3 3 3 3 3
+ 3 3 3 3 3
+ 3 3 3 3 3
+ 3 3 3 3 3
+ 3 3 3 3 3
+ 3 3 3 3 3
+ 3 3 3 3 3
+ 3 3 3 3 3
+ 3 3 3 3 3
+ 3 3 3 3 3
+ 3 3 3 3 3
+ 3 3 3 3 3
+ 3 3 3 3 3
+ 3 3 3 3 3
+ 3 3 3 3 3
+ 3 3 3 3 3
+ 3 3 3 3 3
+ 3 3 3 3 3
+ 3 3 3 3 3
+ 3 3 3 3 3
+ 3 3 3 3 3
+ 3 3 3 3 3
+ 3 3 3 3 3
+ 3 3 3 3 3
+ 3 3 3 3 3
+ 3 3 3 3 3
+ 3 3 3 3 3
+ 3 3 3 3 3
+ 3 3 3 3 3
+ 3 3 3 3 3
+ 3 3 3 3 3
+ 3 3 3 3 3
+ 3 3 3 3 3
+ 3 3 3 3 3
+ 3 3 3 3 3
+ 3 3 3 3 3
+ 3 3 3 3 3
+ 3 3 3 3 3
+ 3 3 3 3 3
+ 3 3 3 3 3
+ 3 3 3 3 3
+ 3 3 3 3 3
+ 3 3 3 3 3
+ 3 3 3 3 3
+ 3 3 3 3 3
+ 3 3 3 3 3
+ 3 3 3 3 3
+ 3 3 3 3 3
+ 3 3 3 3 3
+
+type  = float-attribute
+name  = BRICK_FLOAT_FACS
+count = 310
+              0              0              0              0              0
+              0              0              0              0              0
+              0              0              0              0              0
+              0              0              0              0              0
+              0              0              0              0              0
+              0              0              0              0              0
+              0              0              0              0              0
+              0              0              0              0              0
+              0              0              0              0              0
+              0              0              0              0              0
+              0              0              0              0              0
+              0              0              0              0              0
+              0              0              0              0              0
+              0              0              0              0              0
+              0              0              0              0              0
+              0              0              0              0              0
+              0              0              0              0              0
+              0              0              0              0              0
+              0              0              0              0              0
+              0              0              0              0              0
+              0              0              0              0              0
+              0              0              0              0              0
+              0              0              0              0              0
+              0              0              0              0              0
+              0              0              0              0              0
+              0              0              0              0              0
+              0              0              0              0              0
+              0              0              0              0              0
+              0              0              0              0              0
+              0              0              0              0              0
+              0              0              0              0              0
+              0              0              0              0              0
+              0              0              0              0              0
+              0              0              0              0              0
+              0              0              0              0              0
+              0              0              0              0              0
+              0              0              0              0              0
+              0              0              0              0              0
+              0              0              0              0              0
+              0              0              0              0              0
+              0              0              0              0              0
+              0              0              0              0              0
+              0              0              0              0              0
+              0              0              0              0              0
+              0              0              0              0              0
+              0              0              0              0              0
+              0              0              0              0              0
+              0              0              0              0              0
+              0              0              0              0              0
+              0              0              0              0              0
+              0              0              0              0              0
+              0              0              0              0              0
+              0              0              0              0              0
+              0              0              0              0              0
+              0              0              0              0              0
+              0              0              0              0              0
+              0              0              0              0              0
+              0              0              0              0              0
+              0              0              0              0              0
+              0              0              0              0              0
+              0              0              0              0              0
+              0              0              0              0              0
+
+type = string-attribute
+name = BRICK_LABS
+count = 3692
+'Full_Fstat~H_D#0_Coef~H_D#0_Tstat~H_D#1_Coef~H_D#1_Tstat~H_D#2_Coef~H_D#2_Tstat~H_D#3_Coef~H_D#3_Tstat~H_D#4_Coef~H_D#4_Tstat~H_D#5_Coef~H_D#5_Tstat~H_D#6_Coef~H_D#6_Tstat~H_D#7_Coef~H_D#7_Tstat~H_D#8_Coef~H_D#8_Tstat~H_D#9_Coef~H_D#9_Tstat~H_D#10_Coef~H_D#10_Tstat~H_D#11_Coef~H_D#11_Tstat~H_D_Fstat~H_S#0_Coef~H_S#0_Tstat~H_S#1_Coef~H_S#1_Tstat~H_S#2_Coef~H_S#2_Tstat~H_S#3_Coef~H_S#3_Tstat~H_S#4_Coef~H_S#4_Tstat~H_S#5_Coef~H_S#5_Tstat~H_S#6_Coef~H_S#6_Tstat~H_S#7_Coef~H_S#7_Tstat~H_S#8_Coef~H_S#8_Tstat~H_S#9_Coef~H_S#9_Tstat~H_S#10_Coef~H_S#10_Tstat~H_S#11_Coef~H_S#11_Tstat~H_S_Fstat~M_D#0_Coef~M_D#0_Tstat~M_D#1_Coef~M_D#1_Tstat~M_D#2_Coef~M_D#2_Tstat~M_D#3_Coef~M_D#3_Tstat~M_D#4_Coef~M_D#4_Tstat~M_D#5_Coef~M_D#5_Tstat~M_D#6_Coef~M_D#6_Tstat~M_D#7_Coef~M_D#7_Tstat~M_D#8_Coef~M_D#8_Tstat~M_D#9_Coef~M_D#9_Tstat~M_D#10_Coef~M_D#10_Tstat~M_D#11_Coef~M_D#11_Tstat~M_D_Fstat~M_S#0_Coef~M_S#0_Tstat~M_S#1_Coef~M_S#1_Tstat~M_S#2_Coef~M_S#2_Tstat~M_S#3_Coef~M_S#3_Tstat~M_S#4_Coef~M_S#4_Tstat~M_S#5_Coef~M_S#5_Tstat~M_S#6_Coef~M_S#6_Tstat~M_S#7_Coef~M_S#7_Tstat~M_S#8_Coef~M_S#8_Tstat~M_S#9_Coef~M_S#9_Tstat~M_S#10_Coef~M_S#10_Tstat~M_S#11_Coef~M_S#11_Tstat~M_S_Fstat~R_D#0_Coef~R_D#0_Tstat~R_D#1_Coef~R_D#1_Tstat~R_D#2_Coef~R_D#2_Tstat~R_D#3_Coef~R_D#3_Tstat~R_D#4_Coef~R_D#4_Tstat~R_D#5_Coef~R_D#5_Tstat~R_D#6_Coef~R_D#6_Tstat~R_D#7_Coef~R_D#7_Tstat~R_D#8_Coef~R_D#8_Tstat~R_D#9_Coef~R_D#9_Tstat~R_D#10_Coef~R_D#10_Tstat~R_D#11_Coef~R_D#11_Tstat~R_D_Fstat~R_S#0_Coef~R_S#0_Tstat~R_S#1_Coef~R_S#1_Tstat~R_S#2_Coef~R_S#2_Tstat~R_S#3_Coef~R_S#3_Tstat~R_S#4_Coef~R_S#4_Tstat~R_S#5_Coef~R_S#5_Tstat~R_S#6_Coef~R_S#6_Tstat~R_S#7_Coef~R_S#7_Tstat~R_S#8_Coef~R_S#8_Tstat~R_S#9_Coef~R_S#9_Tstat~R_S#10_Coef~R_S#10_Tstat~R_S#11_Coef~R_S#11_Tstat~R_S_Fstat~T_D#0_Coef~T_D#0_Tstat~T_D#1_Coef~T_D#1_Tstat~T_D#2_Coef~T_D#2_Tstat~T_D#3_Coef~T_D#3_Tstat~T_D#4_Coef~T_D#4_Tstat~T_D#5_Coef~T_D#5_Tstat~T_D#6_Coef~T_D#6_Tstat~T_D#7_Coef~T_D#7_Tstat~T_D#8_Coef~T_D#8_Tstat~T_D#9_Coef~T_D#9_Tstat~T_D#10_Coef~T_D#10_Tstat~T_D#11_Coef~T_D#11_Tstat~T_D_Fstat~T_S#0_Coef~T_S#0_Tstat~T_S#1_Coef~T_S#1_Tstat~T_S#2_Coef~T_S#2_Tstat~T_S#3_Coef~T_S#3_Tstat~T_S#4_Coef~T_S#4_Tstat~T_S#5_Coef~T_S#5_Tstat~T_S#6_Coef~T_S#6_Tstat~T_S#7_Coef~T_S#7_Tstat~T_S#8_Coef~T_S#8_Tstat~T_S#9_Coef~T_S#9_Tstat~T_S#10_Coef~T_S#10_Tstat~T_S#11_Coef~T_S#11_Tstat~T_S_Fstat~P_D#0_Coef~P_D#0_Tstat~P_D#1_Coef~P_D#1_Tstat~P_D#2_Coef~P_D#2_Tstat~P_D#3_Coef~P_D#3_Tstat~P_D#4_Coef~P_D#4_Tstat~P_D#5_Coef~P_D#5_Tstat~P_D#6_Coef~P_D#6_Tstat~P_D#7_Coef~P_D#7_Tstat~P_D#8_Coef~P_D#8_Tstat~P_D#9_Coef~P_D#9_Tstat~P_D#10_Coef~P_D#10_Tstat~P_D#11_Coef~P_D#11_Tstat~P_D_Fstat~P_S#0_Coef~P_S#0_Tstat~P_S#1_Coef~P_S#1_Tstat~P_S#2_Coef~P_S#2_Tstat~P_S#3_Coef~P_S#3_Tstat~P_S#4_Coef~P_S#4_Tstat~P_S#5_Coef~P_S#5_Tstat~P_S#6_Coef~P_S#6_Tstat~P_S#7_Coef~P_S#7_Tstat~P_S#8_Coef~P_S#8_Tstat~P_S#9_Coef~P_S#9_Tstat~P_S#10_Coef~P_S#10_Tstat~P_S#11_Coef~P_S#11_Tstat~P_S_Fstat~B_D#0_Coef~B_D#0_Tstat~B_D#1_Coef~B_D#1_Tstat~B_D#2_Coef~B_D#2_Tstat~B_D#3_Coef~B_D#3_Tstat~B_D#4_Coef~B_D#4_Tstat~B_D#5_Coef~B_D#5_Tstat~B_D#6_Coef~B_D#6_Tstat~B_D#7_Coef~B_D#7_Tstat~B_D#8_Coef~B_D#8_Tstat~B_D#9_Coef~B_D#9_Tstat~B_D#10_Coef~B_D#10_Tstat~B_D#11_Coef~B_D#11_Tstat~B_D_Fstat~B_S#0_Coef~B_S#0_Tstat~B_S#1_Coef~B_S#1_Tstat~B_S#2_Coef~B_S#2_Tstat~B_S#3_Coef~B_S#3_Tstat~B_S#4_Coef~B_S#4_Tstat~B_S#5_Coef~B_S#5_Tstat~B_S#6_Coef~B_S#6_Tstat~B_S#7_Coef~B_S#7_Tstat~B_S#8_Coef~B_S#8_Tstat~B_S#9_Coef~B_S#9_Tstat~B_S#10_Coef~B_S#10_Tstat~B_S#11_Coef~B_S#11_Tstat~B_S_Fstat~DYN.anim-inanim#0_Coef~DYN.anim-inanim#0_Tstat~DYN.anim-inanim_Fstat~STAT.anim-inanim#0_Coef~STAT.anim-inanim#0_Tstat~STAT.anim-inanim_Fstat~mean.Allcond#0_Coef~mean.Allcond#0_Tstat~mean.Allcond_Fstat~
+
+type = string-attribute
+name = BRICK_KEYWORDS
+count = 310
+'~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type  = float-attribute
+name  = BRICK_STATAUX
+count = 668
+              0              4              2            144           1228
+              2              3              1           1228              4
+              3              1           1228              6              3
+              1           1228              8              3              1
+           1228             10              3              1           1228
+             12              3              1           1228             14
+              3              1           1228             16              3
+              1           1228             18              3              1
+           1228             20              3              1           1228
+             22              3              1           1228             24
+              3              1           1228             25              4
+              2             12           1228             27              3
+              1           1228             29              3              1
+           1228             31              3              1           1228
+             33              3              1           1228             35
+              3              1           1228             37              3
+              1           1228             39              3              1
+           1228             41              3              1           1228
+             43              3              1           1228             45
+              3              1           1228             47              3
+              1           1228             49              3              1
+           1228             50              4              2             12
+           1228             52              3              1           1228
+             54              3              1           1228             56
+              3              1           1228             58              3
+              1           1228             60              3              1
+           1228             62              3              1           1228
+             64              3              1           1228             66
+              3              1           1228             68              3
+              1           1228             70              3              1
+           1228             72              3              1           1228
+             74              3              1           1228             75
+              4              2             12           1228             77
+              3              1           1228             79              3
+              1           1228             81              3              1
+           1228             83              3              1           1228
+             85              3              1           1228             87
+              3              1           1228             89              3
+              1           1228             91              3              1
+           1228             93              3              1           1228
+             95              3              1           1228             97
+              3              1           1228             99              3
+              1           1228            100              4              2
+             12           1228            102              3              1
+           1228            104              3              1           1228
+            106              3              1           1228            108
+              3              1           1228            110              3
+              1           1228            112              3              1
+           1228            114              3              1           1228
+            116              3              1           1228            118
+              3              1           1228            120              3
+              1           1228            122              3              1
+           1228            124              3              1           1228
+            125              4              2             12           1228
+            127              3              1           1228            129
+              3              1           1228            131              3
+              1           1228            133              3              1
+           1228            135              3              1           1228
+            137              3              1           1228            139
+              3              1           1228            141              3
+              1           1228            143              3              1
+           1228            145              3              1           1228
+            147              3              1           1228            149
+              3              1           1228            150              4
+              2             12           1228            152              3
+              1           1228            154              3              1
+           1228            156              3              1           1228
+            158              3              1           1228            160
+              3              1           1228            162              3
+              1           1228            164              3              1
+           1228            166              3              1           1228
+            168              3              1           1228            170
+              3              1           1228            172              3
+              1           1228            174              3              1
+           1228            175              4              2             12
+           1228            177              3              1           1228
+            179              3              1           1228            181
+              3              1           1228            183              3
+              1           1228            185              3              1
+           1228            187              3              1           1228
+            189              3              1           1228            191
+              3              1           1228            193              3
+              1           1228            195              3              1
+           1228            197              3              1           1228
+            199              3              1           1228            200
+              4              2             12           1228            202
+              3              1           1228            204              3
+              1           1228            206              3              1
+           1228            208              3              1           1228
+            210              3              1           1228            212
+              3              1           1228            214              3
+              1           1228            216              3              1
+           1228            218              3              1           1228
+            220              3              1           1228            222
+              3              1           1228            224              3
+              1           1228            225              4              2
+             12           1228            227              3              1
+           1228            229              3              1           1228
+            231              3              1           1228            233
+              3              1           1228            235              3
+              1           1228            237              3              1
+           1228            239              3              1           1228
+            241              3              1           1228            243
+              3              1           1228            245              3
+              1           1228            247              3              1
+           1228            249              3              1           1228
+            250              4              2             12           1228
+            252              3              1           1228            254
+              3              1           1228            256              3
+              1           1228            258              3              1
+           1228            260              3              1           1228
+            262              3              1           1228            264
+              3              1           1228            266              3
+              1           1228            268              3              1
+           1228            270              3              1           1228
+            272              3              1           1228            274
+              3              1           1228            275              4
+              2             12           1228            277              3
+              1           1228            279              3              1
+           1228            281              3              1           1228
+            283              3              1           1228            285
+              3              1           1228            287              3
+              1           1228            289              3              1
+           1228            291              3              1           1228
+            293              3              1           1228            295
+              3              1           1228            297              3
+              1           1228            299              3              1
+           1228            300              4              2             12
+           1228            302              3              1           1228
+            303              4              2              1           1228
+            305              3              1           1228            306
+              4              2              1           1228            308
+              3              1           1228            309              4
+              2              1           1228
+
+type = string-attribute
+name = BRICK_STATSYM
+count = 2737
+'Ftest(144,1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);Ftest(12,1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);Ftest(12,1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);Ftest(12,1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);Ftest(12,1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);Ftest(12,1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);Ftest(12,1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);Ftest(12,1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);Ftest(12,1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);Ftest(12,1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);Ftest(12,1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);Ftest(12,1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);none;Ttest(1228);Ftest(12,1228);none;Ttest(1228);Ftest(1,1228);none;Ttest(1228);Ftest(1,1228);none;Ttest(1228);Ftest(1,1228)~
+
+type = string-attribute
+name = TEMPLATE_SPACE
+count = 7
+'TT_N27~
+
+type = integer-attribute
+name = INT_CMAP
+count = 1
+ 0
+
+type = string-attribute
+name = BYTEORDER_STRING
+count = 10
+'LSB_FIRST~

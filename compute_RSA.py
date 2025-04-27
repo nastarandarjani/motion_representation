@@ -43,7 +43,7 @@ script_dir = os.path.dirname(os.path.abspath(__file__))
 os.chdir(script_dir)
 
 
-def load_MRI(filepath, hemisphere):
+def load_MRI(filepath, hemisphere, status):
     """
     Load data from a MAT file using the specified hemisphere identifier.
 
@@ -63,46 +63,14 @@ def load_MRI(filepath, hemisphere):
     data = scipy.io.loadmat(filepath)[key]
 
     # Separate dynamic and static RDM
-    dynamic_tstat = np.mean(data[:6, :, :], axis=1)
-    static_tstat = np.mean(data[6:, :, :], axis=1)
+    if status == "dynamic":
+        tstat = np.mean(data[:6, :, :], axis=1)
+    else:
+        tstat = np.mean(data[6:, :, :], axis=1)
 
-    # swap rows to the desired form
-    dynamic_tstat = dynamic_tstat[[5, 0, 1, 4, 2, 3], :]
+    tstat = tstat[[5, 0, 1, 4, 2, 3], :]
 
-    static_tstat = static_tstat[[5, 0, 1, 4, 2, 3], :]
-
-    return dynamic_tstat, static_tstat
-
-
-def load_behav():
-    """
-    Loads and processes behavioral dissimilarity data from CSV files.
-
-    The function reads two CSV files, "dissimilarity_img2.csv" and "dissimilarity_vid2.csv",
-    which contain static and dynamic behavioral dissimilarity data, respectively. The data
-    is reshaped, averaged, and reordered to match a specific format.
-
-    Returns:
-        tuple: A tuple containing two numpy arrays:
-            - static_behav (numpy.ndarray): Processed static behavioral dissimilarity data.
-            - dynamic_behav (numpy.ndarray): Processed dynamic behavioral dissimilarity data.
-    """
-    static_behav = np.genfromtxt("dissimilarity_img2.csv", delimiter=",")[1:, :]
-    static_behav = static_behav.reshape(6, 6, 6, 6)
-    static_behav = np.mean(static_behav, axis=1)
-    static_behav = np.mean(static_behav, axis=2)
-
-    dynamic_behav = np.genfromtxt("dissimilarity_vid2.csv", delimiter=",")[1:, :]
-    dynamic_behav = dynamic_behav.reshape(6, 6, 6, 6)
-    dynamic_behav = np.mean(dynamic_behav, axis=1)
-    dynamic_behav = np.mean(dynamic_behav, axis=2)
-
-    static_behav = static_behav[[5, 0, 1, 4, 2, 3], :]
-    static_behav = static_behav[:, [5, 0, 1, 4, 2, 3]]
-
-    dynamic_behav = dynamic_behav[[5, 0, 1, 4, 2, 3], :]
-    dynamic_behav = dynamic_behav[:, [5, 0, 1, 4, 2, 3]]
-    return static_behav, dynamic_behav
+    return tstat
 
 
 def calculate_RDM(response_patterns, method="euclidean"):
@@ -221,22 +189,37 @@ def filter_RDM(RDM, mode):
         RDM_tuple = tuple(RDM[i, i] for i in range(6))
         return RDM_tuple
 
+
 if __name__ == "__main__":
     # List of models, correlation types, regions of interest, and hemispheres
     models = ["slow_r50", "slowfast_r50", "res_r50"]  # , 'slow_r50', 'dorsalnet']
     dataset = "k400"
+    status = "dynamic"
     pretrained = True
     random_layer = ""  #'fusion/'
     isimagenet = False
     correlation_types = ["pearson"]
-    ROIList = ["V1", "pFS", "LO", "EBA", "MTSTS", "infIPS", "SMG", "behavior"]
+    ROIList = ["V1", "pFS", "LO", "EBA", "MTSTS", "infIPS", "SMG"]
     hemispheres = ["all", "rh", "lh"]
     names = {"": [""]}  # , '_anim' : ['_animate', '_inanimate']}
 
     if isimagenet:
         models = ["alexnet", "resnet50", "densenet121", "vgg16"]
         pretrained = True
+    if isimagenet:
+        models = ["alexnet", "resnet50", "densenet121", "vgg16"]
+        pretrained = True
 
+    random_initialized = "random/" if random_layer != "" else ""
+    imagenet = "imagenet/" if isimagenet else ""
+    is_cpc = "cpc/" if pretrained == "cpc" else ""
+    pretrained = "untrained/" if not pretrained else ""
+    data = f"{dataset}/" if not (dataset == "k400") else ""
+    # Loop through subjects
+    for sub in range(2, 18):
+        if sub == 8:
+            continue
+        subject = f"S{sub:02d}"
     random_initialized = "random/" if random_layer != "" else ""
     imagenet = "imagenet/" if isimagenet else ""
     is_cpc = "cpc/" if pretrained == "cpc" else ""
@@ -255,54 +238,34 @@ if __name__ == "__main__":
             ):
                 for cor in correlation_types:
                     RDM_folder = f"result/fMRI RDM/{cor}/{region}"
-                    if region == "behavior":
-                        if sub == 2:
-                            static_RDM, dynamic_RDM = load_behav()
 
-                            if not os.path.exists(RDM_folder):
-                                os.makedirs(RDM_folder)
-                            with open(f"{RDM_folder}/RDM_dynamic.pkl", "wb") as File:
-                                pickle.dump(dynamic_RDM, File)
-                            with open(f"{RDM_folder}/RDM_static.pkl", "wb") as File:
-                                pickle.dump(static_RDM, File)
-                        else:
-                            continue
+                    # Create the MRI RDM if it doesn't exist
+                    if not os.path.exists(
+                        f"{RDM_folder}/{subject}_RDM_{hem}_{status}.pkl"
+                    ):
+                        if not os.path.exists(RDM_folder):
+                            os.makedirs(RDM_folder)
+
+                        # Construct the file path for MRI data
+                        filepath = f"fMRI/{subject}/GCSS_noOverlap_{region}_{hem}.mat"
+                        tstat = load_MRI(filepath, hem, status)
+
+                        # calculate RDM from tstat
+                        RDM = calculate_RDM(tstat, cor)
+
+                        with open(
+                            f"{RDM_folder}/{subject}_RDM_{hem}_{status}.pkl", "wb"
+                        ) as File:
+                            pickle.dump(RDM, File)
                     else:
-                        # Create the MRI RDM if it doesn't exist
-                        if not os.path.exists(
-                            f"{RDM_folder}/{subject}_RDM_{hem}_dynamic.pkl"
-                        ):
-                            if not os.path.exists(RDM_folder):
-                                os.makedirs(RDM_folder)
+                        with open(
+                            f"{RDM_folder}/{subject}_RDM_{hem}_{status}.pkl", "rb"
+                        ) as File:
+                            RDM = pickle.load(File)
 
-                            # Construct the file path for MRI data
-                            filepath = (
-                                f"fMRI/{subject}/GCSS_noOverlap_{region}_{hem}.mat"
-                            )
-                            dynamic_tstat, static_tstat = load_MRI(filepath, hem)
-
-                            # calculate RDM from tstat
-                            dynamic_RDM = calculate_RDM(dynamic_tstat, cor)
-                            static_RDM = calculate_RDM(static_tstat, cor)
-
-                            with open(
-                                f"{RDM_folder}/{subject}_RDM_{hem}_dynamic.pkl", "wb"
-                            ) as File:
-                                pickle.dump(dynamic_RDM, File)
-                            with open(
-                                f"{RDM_folder}/{subject}_RDM_{hem}_static.pkl", "wb"
-                            ) as File:
-                                pickle.dump(static_RDM, File)
-                        else:
-                            with open(
-                                f"{RDM_folder}/{subject}_RDM_{hem}_dynamic.pkl", "rb"
-                            ) as File:
-                                dynamic_RDM = pickle.load(File)
-                            with open(
-                                f"{RDM_folder}/{subject}_RDM_{hem}_static.pkl", "rb"
-                            ) as File:
-                                static_RDM = pickle.load(File)
-
+                    for model_name in models:
+                        # Construct the save folder path
+                        save_folder = f"result/RSA/{imagenet}{data}{is_cpc}{pretrained}{random_initialized}{model_name}/{cor}/{region}/{random_layer}"
                     for model_name in models:
                         # Construct the save folder path
                         save_folder = f"result/RSA/{imagenet}{data}{is_cpc}{pretrained}{random_initialized}{model_name}/{cor}/{region}/{random_layer}"
@@ -310,22 +273,24 @@ if __name__ == "__main__":
                         # Create the save folder if it doesn't exist
                         if not os.path.exists(save_folder):
                             os.makedirs(save_folder)
+                        # Create the save folder if it doesn't exist
+                        if not os.path.exists(save_folder):
+                            os.makedirs(save_folder)
 
                         for m, (mode, name) in enumerate(names.items()):
-                            dyn_RDM = filter_RDM(dynamic_RDM, mode)
-                            stat_RDM = filter_RDM(static_RDM, mode)
+                            stat_RDM = filter_RDM(RDM, mode)
 
-                            model_path = f"result/model RDM/{imagenet}{data}{is_cpc}{pretrained}{random_initialized}dynamic/{random_layer}{cor}_RDM_{model_name}.pkl"
+                            model_path = f"result/model RDM/{imagenet}{data}{is_cpc}{pretrained}{random_initialized}{status}/{random_layer}{cor}_RDM_{model_name}.pkl"
                             with open(model_path, "rb") as pickle_file:
                                 model_RDM_dyn = pickle.load(pickle_file)
 
                             for ind, nam in enumerate(name):
                                 # Generate dynamic RSA values
                                 RSA = calculate_RSA_layers(
-                                    model_RDM_dyn, dyn_RDM[ind], mode, ind
+                                    model_RDM_dyn, stat_RDM[ind], mode, ind
                                 )
                                 with open(
-                                    f"{save_folder}{subject}_{hem}_dynamic_RSA{nam}.pkl",
+                                    f"{save_folder}{subject}_{hem}_{status}_RSA{nam}.pkl",
                                     "wb",
                                 ) as File:
                                     pickle.dump(RSA, File)
