@@ -54,21 +54,27 @@ def load_MRI(filepath, hemisphere, status):
     Returns:
     tuple: A tuple containing two numpy arrays, dynamic_tstat and static_tstat.
     """
-    # Load data from MAT file using the specified hemisphere identifier
-    if hemisphere == "all":
-        hemisphere = hemisphere.capitalize()
-    else:
-        hemisphere = hemisphere.upper()
-    key = f"condData{hemisphere}"
-    data = scipy.io.loadmat(filepath)[key]
+    if folder == "BMD":
+        with open(filepath, "rb") as File:
+            data = pickle.load(File)["test_data_allvoxel"]
 
-    # Separate dynamic and static RDM
-    if status == "dynamic":
-        tstat = np.mean(data[:6, :, :], axis=1)
+        tstat = np.mean(data, axis=1)
     else:
-        tstat = np.mean(data[6:, :, :], axis=1)
+        # Load data from MAT file using the specified hemisphere identifier
+        if hemisphere == "all":
+            hemisphere = hemisphere.capitalize()
+        else:
+            hemisphere = hemisphere.upper()
+        key = f"condData{hemisphere}"
+        data = scipy.io.loadmat(filepath)[key]
 
-    tstat = tstat[[5, 0, 1, 4, 2, 3], :]
+        # Separate dynamic and static RDM
+        if status == "dynamic":
+            tstat = np.mean(data[:6, :, :], axis=1)
+        else:
+            tstat = np.mean(data[6:, :, :], axis=1)
+
+        tstat = tstat[[5, 0, 1, 4, 2, 3], :]
 
     return tstat
 
@@ -199,13 +205,15 @@ if __name__ == "__main__":
     random_layer = ""  #'fusion/'
     isimagenet = False
     correlation_types = ["pearson"]
+    folder = "BMD"  # ""
     ROIList = ["V1", "pFS", "LO", "EBA", "MTSTS", "infIPS", "SMG"]
     hemispheres = ["all", "rh", "lh"]
     names = {"": [""]}  # , '_anim' : ['_animate', '_inanimate']}
 
-    if isimagenet:
-        models = ["alexnet", "resnet50", "densenet121", "vgg16"]
-        pretrained = True
+    if folder == "BMD":
+        ROIList = ["EBA", "LOC", "STS"]
+        hemispheres = ["rh", "lh"]
+
     if isimagenet:
         models = ["alexnet", "resnet50", "densenet121", "vgg16"]
         pretrained = True
@@ -216,18 +224,12 @@ if __name__ == "__main__":
     pretrained = "untrained/" if not pretrained else ""
     data = f"{dataset}/" if not (dataset == "k400") else ""
     # Loop through subjects
-    for sub in range(2, 18):
-        if sub == 8:
+    for sub in range(1, 18):
+        if sub == 1 and folder == "":
             continue
-        subject = f"S{sub:02d}"
-    random_initialized = "random/" if random_layer != "" else ""
-    imagenet = "imagenet/" if isimagenet else ""
-    is_cpc = "cpc/" if pretrained == "cpc" else ""
-    pretrained = "untrained/" if not pretrained else ""
-    data = f"{dataset}/" if not (dataset == "k400") else ""
-    # Loop through subjects
-    for sub in range(2, 18):
-        if sub == 8:
+        if sub == 8 and folder == "":
+            continue
+        if sub > 10 and folder == "BMD":
             continue
         subject = f"S{sub:02d}"
 
@@ -237,7 +239,7 @@ if __name__ == "__main__":
                 hemispheres, desc=f"computing for subject {sub} in region {region}"
             ):
                 for cor in correlation_types:
-                    RDM_folder = f"result/fMRI RDM/{cor}/{region}"
+                    RDM_folder = f"result/fMRI RDM/{folder}/{cor}/{region}"
 
                     # Create the MRI RDM if it doesn't exist
                     if not os.path.exists(
@@ -246,8 +248,14 @@ if __name__ == "__main__":
                         if not os.path.exists(RDM_folder):
                             os.makedirs(RDM_folder)
 
-                        # Construct the file path for MRI data
-                        filepath = f"fMRI/{subject}/GCSS_noOverlap_{region}_{hem}.mat"
+                        if folder == "BMD":
+                            filepath = f"/Users/nastaran/ds005165/derivatives/versionB/MNI152/prepared_allvoxel_pkl/sub-{sub:02d}/sub-{sub:02d}_roi-{hem[0]}{region}_betas_normalized.pkl"
+                        else:
+                            # Construct the file path for MRI data
+                            filepath = (
+                                f"fMRI/{subject}/GCSS_noOverlap_{region}_{hem}.mat"
+                            )
+
                         tstat = load_MRI(filepath, hem, status)
 
                         # calculate RDM from tstat
@@ -265,14 +273,8 @@ if __name__ == "__main__":
 
                     for model_name in models:
                         # Construct the save folder path
-                        save_folder = f"result/RSA/{imagenet}{data}{is_cpc}{pretrained}{random_initialized}{model_name}/{cor}/{region}/{random_layer}"
-                    for model_name in models:
-                        # Construct the save folder path
-                        save_folder = f"result/RSA/{imagenet}{data}{is_cpc}{pretrained}{random_initialized}{model_name}/{cor}/{region}/{random_layer}"
+                        save_folder = f"result/RSA/{imagenet}{data}{is_cpc}{pretrained}{random_initialized}{folder}/{model_name}/{cor}/{region}/{random_layer}"
 
-                        # Create the save folder if it doesn't exist
-                        if not os.path.exists(save_folder):
-                            os.makedirs(save_folder)
                         # Create the save folder if it doesn't exist
                         if not os.path.exists(save_folder):
                             os.makedirs(save_folder)
@@ -280,7 +282,7 @@ if __name__ == "__main__":
                         for m, (mode, name) in enumerate(names.items()):
                             stat_RDM = filter_RDM(RDM, mode)
 
-                            model_path = f"result/model RDM/{imagenet}{data}{is_cpc}{pretrained}{random_initialized}{status}/{random_layer}{cor}_RDM_{model_name}.pkl"
+                            model_path = f"result/model RDM/{folder}/{imagenet}{data}{is_cpc}{pretrained}{random_initialized}{status}/{random_layer}{cor}_RDM_{model_name}.pkl"
                             with open(model_path, "rb") as pickle_file:
                                 model_RDM_dyn = pickle.load(pickle_file)
 

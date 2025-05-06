@@ -1,4 +1,3 @@
-from tkinter import font
 import matplotlib.pyplot as plt
 import pickle
 import numpy as np
@@ -16,7 +15,6 @@ script_dir = os.path.dirname(os.path.abspath(__file__))
 # Change to a relative directory from the script's location
 os.chdir(script_dir)
 
-ROIList = ["V1", "pFS", "LO", "EBA", "MTSTS", "infIPS", "SMG_lh"]
 status = "dynamic"
 
 
@@ -43,7 +41,7 @@ def bootstraping(data_A, data_B):
 
 
 def load_rsa_data(region, model_name, data_path, hem):
-    folder = f"result/RSA/{data_path}{model_name}/pearson/{region}/"
+    folder = f"result/RSA/{data_path}{folderr}/{model_name}/pearson/{region}/"
     data = []
 
     if region == "behavior":
@@ -52,8 +50,12 @@ def load_rsa_data(region, model_name, data_path, hem):
         data = [[tup[1] for tup in rsa_dict.values()] for rsa_dict in RSA]
         RSA = RSA[0]
     else:
-        for sub in range(2, 18):
-            if sub == 8:
+        for sub in range(1, 18):
+            if sub == 1 and folderr == "":
+                continue
+            if sub == 8 and folderr == "":
+                continue
+            if sub > 10 and folderr == "BMD":
                 continue
             subject = f"S{sub:02d}"
             with open(f"{folder}{subject}_{hem}_{status}_RSA.pkl", "rb") as File:
@@ -141,12 +143,16 @@ def compute_noise_ceiling(region, hem):
         fmri_data = dynamic_RDM[:, triu_indices[0], triu_indices[1]]
     else:
         fmri_data = []
-        for sub in range(2, 18):
-            if sub == 8:
+        for sub in range(1, 18):
+            if sub == 1 and folderr == "":
+                continue
+            if sub == 8 and folderr == "":
+                continue
+            if sub > 10 and folderr == "BMD":
                 continue
             subject = f"S{sub:02d}"
 
-            RDM_folder = f"result/fMRI RDM/pearson/{region}"
+            RDM_folder = f"result/fMRI RDM/{folderr}/pearson/{region}"
             with open(f"{RDM_folder}/{subject}_RDM_{hem}_{status}.pkl", "rb") as File:
                 dynamic_RDM = pickle.load(File)
 
@@ -166,15 +172,18 @@ def compute_noise_ceiling(region, hem):
     return np.mean(correlations), stats.sem(correlations)
 
 
-def main(hem, color):
+def main(hemm, color):
     for datas in dataset:
+        ROW = 1 if folderr == "BMD" else 2
+        column = int(np.ceil((len(ROIList) + 1) / ROW))
         fig, axes = plt.subplots(
-            2,
-            int(np.ceil(len(ROIList) / 2)),
-            figsize=(7, 2.25),
+            ROW,
+            column,
+            figsize=(7, 1.125 * ROW),
             sharey=True,
             sharex=True,
         )
+        axes = np.atleast_2d(axes)
         fig.canvas.draw()
 
         data_path = f"{datas}/" if datas != "k400" else ""
@@ -182,7 +191,7 @@ def main(hem, color):
         cmap = cm.get_cmap("cold_hot", len(ROIList) + 2)
 
         for r, region in enumerate(ROIList):
-            row, col = divmod(r + 1, 4)
+            row, col = divmod(r + 1, column)
             ax = axes[row, col]
             ax.set_axisbelow(True)
             ax.grid(False)
@@ -192,7 +201,7 @@ def main(hem, color):
                 region, hem = region.split("_")
                 ROIList[r] = rf"${{\text{{{region}}}}}_{{{hem}}}$"
             else:
-                hem = "all"
+                hem = hemm
 
             for c, cond in enumerate(condition):
                 if cond in ["S_wx", "F_wx"]:
@@ -336,24 +345,24 @@ def main(hem, color):
         fig.subplots_adjust(bottom=0.13)
 
         axes[0, 0].axis("off")
-        axes[0, 0].text(
-            0,
-            1.15,
-            "A",
-            transform=axes[0, 0].transAxes,
-            ha="left",
-            va="top",
-            fontweight="bold",
-        )
-        axes[0, 1].text(
-            -0.15,
-            1.15,
-            "B",
-            transform=axes[0, 1].transAxes,
-            ha="left",
-            va="top",
-            fontweight="bold",
-        )
+        # axes[0, 0].text(
+        #     0,
+        #     1.15,
+        #     "A",
+        #     transform=axes[0, 0].transAxes,
+        #     ha="left",
+        #     va="top",
+        #     fontweight="bold",
+        # )
+        # axes[0, 1].text(
+        #     -0.15,
+        #     1.15,
+        #     "B",
+        #     transform=axes[0, 1].transAxes,
+        #     ha="left",
+        #     va="top",
+        #     fontweight="bold",
+        # )
 
     plt.savefig(f"plot/{datas}_{hem}_{condition}.png", dpi=300, bbox_inches="tight")
 
@@ -373,15 +382,23 @@ if __name__ == "__main__":
         }
     )
 
+    folderr = "BMD"  # "BMD" or ""
     dataset = ["k400"]
-    hem = "all"
+    hem = "lh"
 
-    condition = ["S_wx", "F_wx"]
-    color = ["tab:orange", "tab:blue"]
+    # condition = ["S_wx", "F_wx"]
+    # color = ["tab:orange", "tab:blue"]
 
-    # condition = ["S_nox", "S_wx"]
-    # color = ["tab:green", "tab:orange"]
+    condition = ["S_nox", "S_wx"]
+    color = ["tab:green", "tab:orange"]
 
     # condition = ["S_nox", "S_1"]
     # color = ["tab:green", "tab:red"]
+
+    if folderr != "BMD":
+        folderr = ""
+        ROIList = ["V1", "pFS", "LO", "EBA", "MTSTS", "infIPS", "SMG_lh"]
+    else:
+        ROIList = ["EBA", "LOC", "STS"]
+
     main(hem, color)
