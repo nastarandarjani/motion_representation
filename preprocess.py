@@ -9,6 +9,12 @@ from torchvision.io import write_video
 from PIL import Image
 import numpy as np
 
+# Get the directory where the script is located
+script_dir = os.path.dirname(os.path.abspath(__file__))
+# Change to a relative directory from the script's location
+os.chdir(script_dir)
+
+
 def preprocess_video(input_folder, target_fps=30, clip_duration=3):
     """
     Process videos in the input folder and save them with prefix "preprocessed_" in the same folder with adjusted FPS and duration.
@@ -93,6 +99,6 @@ def preprocess_images(input_folder):
             write_video(output_video_path, noise, 30)
             counter += 1
 
-folder_path = 'stimuli/'
+folder_path = "generated_videos/"
 preprocess_video(folder_path)
-preprocess_images(folder_path)
+# preprocess_images(folder_path)
