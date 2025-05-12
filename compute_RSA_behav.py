@@ -5,6 +5,11 @@ import numpy as np
 from tqdm import tqdm
 from compute_RSA import calculate_RSA
 
+# Get the directory where the script is located
+script_dir = os.path.dirname(os.path.abspath(__file__))
+# Change to a relative directory from the script's location
+os.chdir(script_dir)
+
 names = [
     "reptile",
     "ball",
@@ -78,82 +83,82 @@ def sort_ind(names):
     ind = np.argsort([category_order.get(x) for x in names])
     return ind
 
+if __name__ == "__main__":
+    data = scipy.io.loadmat("O1O.mat")
+    data = data["table"]
 
-data = scipy.io.loadmat("O1O.mat")
-data = data["table"]
+    B = 1000
+    bootstrap_rdms = np.zeros((B, 36, 36))
 
-B = 1000
-bootstrap_rdms = np.zeros((B, 36, 36))
+    ind = sort_ind(names)
+    for b in tqdm(range(B)):
+        sampled_indices = np.random.choice(
+            data.shape[0] // 3, size=data.shape[0] // 3, replace=True
+        )
+        resampled_data = np.vstack([data[i * 3 : (i + 1) * 3] for i in sampled_indices])
+        bootstrap_rdm = compute_rdm(resampled_data)
+        bootstrap_rdm = bootstrap_rdm[ind, :][:, ind]
+        bootstrap_rdms[b, :, :] = bootstrap_rdm
 
-ind = sort_ind(names)
-for b in tqdm(range(B)):
-    sampled_indices = np.random.choice(
-        data.shape[0] // 3, size=data.shape[0] // 3, replace=True
-    )
-    resampled_data = np.vstack([data[i * 3 : (i + 1) * 3] for i in sampled_indices])
-    bootstrap_rdm = compute_rdm(resampled_data)
-    bootstrap_rdm = bootstrap_rdm[ind, :][:, ind]
-    bootstrap_rdms[b, :, :] = bootstrap_rdm
+    bootstrap_rdms = bootstrap_rdms.reshape(B, 6, 6, 6, 6)
+    bootstrap_rdms = np.mean(bootstrap_rdms, axis=2)
+    bootstrap_rdms = np.mean(bootstrap_rdms, axis=3)
 
-bootstrap_rdms = bootstrap_rdms.reshape(B, 6, 6, 6, 6)
-bootstrap_rdms = np.mean(bootstrap_rdms, axis=2)
-bootstrap_rdms = np.mean(bootstrap_rdms, axis=3)
+    bootstrap_rdms = bootstrap_rdms[:, [5, 0, 1, 4, 2, 3], :]
+    bootstrap_rdms = bootstrap_rdms[:, :, [5, 0, 1, 4, 2, 3]]
 
-bootstrap_rdms = bootstrap_rdms[:, [5, 0, 1, 4, 2, 3], :]
-bootstrap_rdms = bootstrap_rdms[:, :, [5, 0, 1, 4, 2, 3]]
+    RDM_folder = "result/fMRI RDM/pearson/behavior"
+    with open(f"{RDM_folder}/S02_RDM_dynamic.pkl", "wb") as File:
+        pickle.dump(bootstrap_rdms, File)
 
-RDM_folder = "result/fMRI RDM/pearson/behavior"
-with open(f"{RDM_folder}/S02_RDM_dynamic.pkl", "wb") as File:
-    pickle.dump(bootstrap_rdms, File)
-
-# List of models, correlation types, regions of interest, and hemispheres
-models = ["slow_r50", "slowfast_r50", "res_r50"]  # , 'slow_r50', 'dorsalnet']
-dataset = "k400"
-pretrained = True
-random_layer = ""  #'fusion/'
-isimagenet = False
-correlation_types = ["pearson"]
-names = {"": [""]}  # , '_anim' : ['_animate', '_inanimate']}
-
-if isimagenet:
-    models = ["alexnet", "resnet50", "densenet121", "vgg16"]
+    # List of models, correlation types, regions of interest, and hemispheres
+    models = ["slow_r50", "slowfast_r50", "res_r50"]  # , 'slow_r50', 'dorsalnet']
+    dataset = "k400"
     pretrained = True
+    random_layer = ""  #'fusion/'
+    isimagenet = False
+    correlation_types = ["pearson"]
+    names = {"": [""]}  # , '_anim' : ['_animate', '_inanimate']}
 
-random_initialized = "random/" if random_layer != "" else ""
-imagenet = "imagenet/" if isimagenet else ""
-is_cpc = "cpc/" if pretrained == "cpc" else ""
-pretrained = "untrained/" if not pretrained else ""
-data = f"{dataset}/" if not (dataset == "k400") else ""
-# Loop through subjects
+    if isimagenet:
+        models = ["alexnet", "resnet50", "densenet121", "vgg16"]
+        pretrained = True
 
-for cor in correlation_types:
-    bootstrap_rdms
+    random_initialized = "random/" if random_layer != "" else ""
+    imagenet = "imagenet/" if isimagenet else ""
+    is_cpc = "cpc/" if pretrained == "cpc" else ""
+    pretrained = "untrained/" if not pretrained else ""
+    data = f"{dataset}/" if not (dataset == "k400") else ""
+    # Loop through subjects
 
-    for model_name in models:
-        # Construct the save folder path
-        save_folder = f"result/RSA/{imagenet}{data}{is_cpc}{pretrained}{random_initialized}{model_name}/{cor}/behavior/{random_layer}"
+    for cor in correlation_types:
+        bootstrap_rdms
 
-        # Create the save folder if it doesn't exist
-        if not os.path.exists(save_folder):
-            os.makedirs(save_folder)
+        for model_name in models:
+            # Construct the save folder path
+            save_folder = f"result/RSA/{imagenet}{data}{is_cpc}{pretrained}{random_initialized}{model_name}/{cor}/behavior/{random_layer}"
 
-        RDM2 = bootstrap_rdms
+            # Create the save folder if it doesn't exist
+            if not os.path.exists(save_folder):
+                os.makedirs(save_folder)
 
-        model_path = f"result/model RDM/{imagenet}{data}{is_cpc}{pretrained}{random_initialized}dynamic/{random_layer}{cor}_RDM_{model_name}.pkl"
-        with open(model_path, "rb") as pickle_file:
-            RDM1 = pickle.load(pickle_file)
+            RDM2 = bootstrap_rdms
 
-        RSA = []
-        for rdm2 in tqdm(RDM2):
-            RSA_b = {}
-            for layer_name, RDM in RDM1.items():
-                if "slow_" in model_name and "multipathway_fusion" in layer_name:
-                    continue
-                RSA_b[layer_name] = calculate_RSA(RDM, rdm2)
-            RSA.append(RSA_b)
+            model_path = f"result/model RDM/{imagenet}{data}{is_cpc}{pretrained}{random_initialized}dynamic/{random_layer}{cor}_RDM_{model_name}.pkl"
+            with open(model_path, "rb") as pickle_file:
+                RDM1 = pickle.load(pickle_file)
 
-        with open(
-            f"{save_folder}S02_dynamic_RSA.pkl",
-            "wb",
-        ) as File:
-            pickle.dump(RSA, File)
+            RSA = []
+            for rdm2 in tqdm(RDM2):
+                RSA_b = {}
+                for layer_name, RDM in RDM1.items():
+                    if "slow_" in model_name and "multipathway_fusion" in layer_name:
+                        continue
+                    RSA_b[layer_name] = calculate_RSA(RDM, rdm2)
+                RSA.append(RSA_b)
+
+            with open(
+                f"{save_folder}S02_dynamic_RSA.pkl",
+                "wb",
+            ) as File:
+                pickle.dump(RSA, File)
