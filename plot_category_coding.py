@@ -12,8 +12,8 @@ os.chdir(script_dir)
 
 
 def calculate_RSA(RDM1, RDM2):
-    RDM1 = RDM1[np.triu_indices(RDM1.shape[0], k=1)]
-    RDM2 = RDM2[np.triu_indices(RDM2.shape[0], k=1)]
+    RDM1 = RDM1[np.triu_indices(RDM1.shape[0], k=0)]
+    RDM2 = RDM2[np.triu_indices(RDM2.shape[0], k=0)]
 
     correlation, _ = kendalltau(RDM1, RDM2)
     return correlation
@@ -28,27 +28,23 @@ def LOO(rdms):
         correlation = calculate_RSA(rdms[i], np.mean(rdms[mask], axis=0))
         correlations.append(correlation)
 
-    return np.array(correlations)
+    return np.mean(correlations), stats.sem(correlations)
 
 
 def compute_noise_ceiling(rdm_behavior_all, model_cm_all_folds):
     # r1: behavioral reliability
-    r1_values = LOO(np.array(rdm_behavior_all))
+    # r1_values = LOO(np.array(rdm_behavior_all))
 
     # r2: model reliability
     model_rdms = []
     for cm in model_cm_all_folds:
         rdm_model = (cm + cm.T) / 2
-        rdm_model = 1 - (rdm_model / 6)
+        rdm_model = 1 - (rdm_model / rdm_model.max())
         model_rdms.append(rdm_model)
 
-    r2_values = LOO(np.array(model_rdms))
+    r2_values, re = LOO(np.array(model_rdms))
 
-    # Compute noise ceiling using mean of sqrt(r1_i * r2_j)
-    r_matrix = np.sqrt(np.outer(r1_values, r2_values))
-    r_matrix = r_matrix.flatten()
-
-    return np.mean(r_matrix), stats.sem(r_matrix)
+    return r2_values, re
 
 
 model_names = ["slowfast_r50", "slow_r50", "res_r50"]
@@ -66,16 +62,16 @@ for model_name in model_names:
     with open(f"result/confusions/{model_name}.pkl", "rb") as File:
         cm = pickle.load(File)
 
-    # nc_avg, nc_sem = compute_noise_ceiling(rdm_behavior_all, cm)
-    # NC_means.append(nc_avg)
-    # NC_sems.append(nc_sem)
+    nc_avg, nc_sem = compute_noise_ceiling(rdm_behavior_all, cm)
+    NC_means.append(nc_avg)
+    NC_sems.append(nc_sem)
 
     rsa_all_folds = []
 
     for fold_cm in cm:
         # Symmetrize and convert to RDM
         rdm_model = (fold_cm + fold_cm.T) / 2
-        rdm_model = 1 - (rdm_model / 6)
+        rdm_model = 1 - (rdm_model / rdm_model.max())
 
         rsa = calculate_RSA(rdm_behavior, rdm_model)
         rsa_all_folds.append(rsa)
@@ -97,10 +93,10 @@ bars = ax.bar(
 
 ax.axhline(y=0, color="black")
 
-# # Plot noise ceiling
-# ax.errorbar(
-#     x, NC_means, yerr=NC_sems, fmt="o", color="black", label="Noise Ceiling", capsize=5
-# )
+# Plot noise ceiling
+ax.errorbar(
+    x, NC_means, yerr=NC_sems, fmt="o", color="black", label="Noise Ceiling", capsize=2
+)
 
 ax.set_ylabel("RSA (Kendall’s τ)")
 ax.set_title("Model RDM vs Behavioral RDM (Kendall’s τ)")

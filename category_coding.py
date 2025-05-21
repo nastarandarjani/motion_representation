@@ -86,7 +86,6 @@ class VideoDataset(Dataset):
     def get_labels(self):
         return [label_str for _, label_str in self.samples]
 
-
 def get_feature(model_name, dataset, device):
     if model_name == "res_r50":
         model = torch.hub.load(
