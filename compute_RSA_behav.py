@@ -3,7 +3,7 @@ import pickle
 import scipy
 import numpy as np
 from tqdm import tqdm
-from compute_RSA import calculate_RSA
+from utils.util import calculate_RSA
 
 # Get the directory where the script is located
 script_dir = os.path.dirname(os.path.abspath(__file__))

@@ -1,41 +1,10 @@
-"""This script performs Representational Similarity Analysis (RSA) on fMRI data and behavioral dissimilarity data.
-It calculates Representational Dissimilarity Matrices (RDMs) for different brain regions and compares them with model RDMs.
-
-Functions:
-    load_MRI(filepath, hemisphere):
-
-    load_behav():
-
-    calculate_RDM(response_patterns, method="euclidean"):
-
-    calculate_RSA(RDM1, RDM2):
-
-    calculate_RSA_layers(RDM1, RDM2, mode, ind):
-
-    filter_RDM(RDM, mode):
-
-Variables:
-    models (list): List of model names to be used for RSA.
-    dataset (str): Name of the dataset.
-    pretrained (bool): Flag indicating whether the models are pretrained.
-    random_layer (str): Path to the random layer.
-    isimagenet (bool): Flag indicating whether the dataset is ImageNet.
-    correlation_types (list): List of correlation types to be used for RSA.
-    ROIList (list): List of regions of interest.
-    hemispheres (list): List of hemispheres to be analyzed.
-    names (dict): Dictionary mapping modes to names.
-
-The script loops through subjects, regions of interest, hemispheres, models, and correlation types to calculate and save RDMs and RSA values.
-"""
-
 import pickle
-from scipy.stats import kendalltau
+from utils.util import calculate_RSA
 from scipy.stats import spearmanr
 import scipy.io
 import os
 from tqdm import tqdm
 import numpy as np
-
 
 # Get the directory where the script is located
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -109,35 +78,6 @@ def calculate_RDM(response_patterns, method="euclidean"):
         rdm = 1 - np.corrcoef(response_patterns)
 
     return rdm
-
-
-def calculate_RSA(RDM1, RDM2):
-    """
-    Calculate the Representational Similarity Analysis (RSA) between two Representational Dissimilarity Matrices (RDMs).
-
-    This function computes the Kendall's Tau correlation between the upper triangular parts of two RDMs, excluding the diagonal.
-    It performs bootstrapping by randomly sampling with replacement to estimate the correlation distribution.
-
-    Parameters:
-    RDM1 (numpy.ndarray): The first Representational Dissimilarity Matrix.
-    RDM2 (numpy.ndarray): The second Representational Dissimilarity Matrix.
-
-    Returns:
-    tuple: A tuple containing the mean and median of the bootstrapped Kendall's Tau correlations.
-    """
-    RDM1 = RDM1[np.triu_indices(RDM1.shape[0], k=1)]
-    RDM2 = RDM2[np.triu_indices(RDM2.shape[0], k=1)]
-
-    # Calculate Kendall's Tau correlation between the two RDMs
-    correlations = []
-    for _ in range(100):
-        ind = np.random.choice(15, size=15, replace=True)
-        correlation, _ = kendalltau(RDM1[ind], RDM2[ind])
-        # correlation = np.corrcoef(RDM1, RDM2)[0][1]
-
-        correlations.append(correlation)
-
-    return (np.mean(correlations), np.median(correlations))
 
 
 def calculate_RSA_layers(RDM1, RDM2, mode, ind):

@@ -4,11 +4,7 @@ import numpy as np
 from scipy import stats
 import os
 import itertools
-from scipy.stats import kendalltau
-from mne.stats import permutation_cluster_test
-import matplotlib.patches as mpatches
-import matplotlib.cm as cm
-from nilearn.plotting import plot_surf_roi
+from utils.util import compute_noise_ceiling, filter_rsa_data, init_plot, bootstraping
 
 # Get the directory where the script is located
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -18,30 +14,8 @@ os.chdir(script_dir)
 status = "dynamic"
 
 
-def bootstraping(data_A, data_B):
-    def my_statistic(data_A, data_B):
-        return np.mean(data_A, axis=0) - np.mean(data_B, axis=0)
-
-    T_obs, clusters, cluster_p_values, _ = permutation_cluster_test(
-        [data_A, data_B],
-        n_permutations=1000,
-        tail=0,
-        stat_fun=my_statistic,
-        out_type="mask",
-        threshold=0.1,
-        verbose=False,
-    )
-
-    significant = np.zeros(T_obs.shape, dtype=bool)
-    for i, p_value in enumerate(cluster_p_values):
-        if p_value < 0.05:
-            significant[clusters[i]] = True
-
-    return significant
-
-
-def load_rsa_data(region, model_name, data_path, hem):
-    folder = f"result/RSA/{data_path}{folderr}/{model_name}/pearson/{region}/"
+def load_rsa_data(region, model_name, hem):
+    folder = f"result/RSA/{model_name}/pearson/{region}/"
     data = []
 
     if region == "behavior":
@@ -51,11 +25,9 @@ def load_rsa_data(region, model_name, data_path, hem):
         RSA = RSA[0]
     else:
         for sub in range(1, 18):
-            if sub == 1 and folderr == "":
+            if sub == 1:
                 continue
-            if sub == 8 and folderr == "":
-                continue
-            if sub > 10 and folderr == "BMD":
+            if sub == 8:
                 continue
             subject = f"S{sub:02d}"
             with open(f"{folder}{subject}_{hem}_{status}_RSA.pkl", "rb") as File:
@@ -63,32 +35,6 @@ def load_rsa_data(region, model_name, data_path, hem):
             data.append([tup[1] for tup in RSA.values()])
 
     return np.array(data), RSA
-
-
-def filter_rsa_data(RSA, cond):
-    def is_valid_key(key):
-        return "act_a" not in key and "act_b" not in key
-
-    if cond in ["S_wx", "S_nox"]:
-        return [
-            key
-            for key in RSA.keys()
-            if "multipathway_blocks.0" in key and is_valid_key(key)
-        ]
-    elif cond == "F_wx":
-        return [
-            key
-            for key in RSA.keys()
-            if "multipathway_blocks.1" in key and is_valid_key(key)
-        ]
-    elif cond == "fusion":
-        return [
-            key
-            for key in RSA.keys()
-            if "multipathway_fusion" in key and is_valid_key(key)
-        ]
-
-    return [key for key in RSA.keys() if is_valid_key(key)]
 
 
 def plot_significance(ax, sig, count):
@@ -133,84 +79,47 @@ def plot_significance(ax, sig, count):
             )
 
 
-def compute_noise_ceiling(region, hem):
-    if region == "behavior":
-        RDM_folder = f"result/fMRI RDM/pearson/{region}"
-        with open(f"{RDM_folder}/S02_RDM_{status}.pkl", "rb") as File:
-            dynamic_RDM = pickle.load(File)
+def main(color, condition):
+    hemm = "all"
 
-        triu_indices = np.triu_indices(dynamic_RDM.shape[1], k=1)
-        fmri_data = dynamic_RDM[:, triu_indices[0], triu_indices[1]]
-    else:
-        fmri_data = []
-        for sub in range(1, 18):
-            if sub == 1 and folderr == "":
-                continue
-            if sub == 8 and folderr == "":
-                continue
-            if sub > 10 and folderr == "BMD":
-                continue
-            subject = f"S{sub:02d}"
+    row = len(condition)
+    column = len(ROIList)
+    fig, axes = plt.subplots(
+        row,
+        column,
+        figsize=(7, 1.3 * row),
+        sharey=True,
+    )
+    axes = np.atleast_2d(axes)
+    roi = ROIList.copy()
 
-            RDM_folder = f"result/fMRI RDM/{folderr}/pearson/{region}"
-            with open(f"{RDM_folder}/{subject}_RDM_{hem}_{status}.pkl", "rb") as File:
-                dynamic_RDM = pickle.load(File)
-
-            fmri_data.append(dynamic_RDM[np.triu_indices(dynamic_RDM.shape[0], k=1)])
-        fmri_data = np.array(fmri_data)
-
-    correlations = []
-    for i in range(fmri_data.shape[0]):
-        mask = np.ones(fmri_data.shape[0], dtype=bool)
-        mask[i] = False
-
-        correlation, _ = kendalltau(
-            fmri_data[i, :], np.mean(fmri_data[mask, :], axis=0)
-        )
-        correlations.append(correlation)
-
-    return np.mean(correlations), stats.sem(correlations)
-
-
-def main(hemm, color):
-    for datas in dataset:
-        ROW = 1 if folderr == "BMD" else 2
-        column = int(np.ceil((len(ROIList) + 1) / ROW))
-        fig, axes = plt.subplots(
-            ROW,
-            column,
-            figsize=(7, 1.125 * ROW),
-            sharey=True,
-            sharex=True,
-        )
-        axes = np.atleast_2d(axes)
-        fig.canvas.draw()
-
-        data_path = f"{datas}/" if datas != "k400" else ""
-
-        cmap = cm.get_cmap("cold_hot", len(ROIList) + 2)
-
+    handles = []
+    for m, conds in enumerate(condition):
         for r, region in enumerate(ROIList):
-            row, col = divmod(r + 1, column)
-            ax = axes[row, col]
+            ax = axes[m, r]
             ax.set_axisbelow(True)
             ax.grid(False)
             ttest_data = []
 
             if "SMG" in region:
                 region, hem = region.split("_")
-                ROIList[r] = rf"${{\text{{{region}}}}}_{{{hem}}}$"
+                roi[r] = rf"${{\text{{{region}}}}}_{{{hem}}}$"
             else:
                 hem = hemm
 
-            for c, cond in enumerate(condition):
+            if region == "MTSTS":
+                roi[r] = "${\\text{LOT}}_{bio}$"
+
+            for c, cond in enumerate(conds):
                 if cond in ["S_wx", "F_wx"]:
                     model_name = "slowfast_r50"
                 elif cond == "S_nox":
                     model_name = "slow_r50"
-                else:
+                elif cond == "S_1":
                     model_name = "res_r50"
-                data, RSA = load_rsa_data(region, model_name, data_path, hem)
+                else:
+                    model_name = "dorsalnet"
+                data, RSA = load_rsa_data(region, model_name, hem)
                 filtered_list = filter_rsa_data(RSA, cond)
 
                 indices = [
@@ -222,183 +131,111 @@ def main(hemm, color):
                 SEM = stats.sem(filtered_data, axis=0)
                 filtered_data = np.mean(filtered_data, axis=0)
 
-                if cond == condition[0]:
+                if cond == conds[0]:
                     nc_avg, nc_sem = compute_noise_ceiling(region, hem)
-                    ax.fill_between(
-                        range(len(filtered_data)),
-                        nc_avg - nc_sem,
-                        nc_avg + nc_sem,
-                        color="gray",
-                        alpha=0.2,
-                    )
+                    # ax.fill_between(
+                    #     range(len(filtered_data)),
+                    #     nc_avg - nc_sem,
+                    #     nc_avg + nc_sem,
+                    #     color="gray",
+                    #     alpha=0.2,
+                    # )
                     ax.plot(
                         range(len(filtered_data)),
                         np.ones((len(filtered_data))) * nc_avg,
                         color="gray",
                         lw=1,
                     )
-                    ax.plot(
-                        range(len(filtered_data)),
-                        np.ones((len(filtered_data))) * (nc_avg - nc_sem),
-                        color="gray",
-                        lw=0.2,
-                    )
-                    ax.plot(
-                        range(len(filtered_data)),
-                        np.ones((len(filtered_data))) * (nc_avg + nc_sem),
-                        color="gray",
-                        lw=0.2,
-                    )
+                    # ax.plot(
+                    #     range(len(filtered_data)),
+                    #     np.ones((len(filtered_data))) * (nc_avg - nc_sem),
+                    #     color="gray",
+                    #     lw=0.2,
+                    # )
+                    # ax.plot(
+                    #     range(len(filtered_data)),
+                    #     np.ones((len(filtered_data))) * (nc_avg + nc_sem),
+                    #     color="gray",
+                    #     lw=0.2,
+                    # )
 
                 ax.fill_between(
                     range(len(filtered_data)),
                     filtered_data - SEM,
                     filtered_data + SEM,
+                    color=color[m][c],
                     alpha=0.3,
-                    label=f"{cond}",
-                    color=color[c],
                     lw=0.8,
                 )
 
-                ax.plot(filtered_data, label=None, color=color[c], lw=0.8)
+                ax.plot(filtered_data, color=color[m][c], label=f"{cond}", lw=0.8)
 
             for spine in ax.spines.values():
                 spine.set_linewidth(0.5)
 
             ax.axhline(y=0, color="black", lw=0.8, ls="--")
-
-            if region == "MTSTS":
-                ROIList[r] = "${\\text{LOT}}_{bio}$"
-
-            text_x = 0.5
-            text_y = 1.02
-
-            text_obj = ax.text(
-                text_x,
-                text_y,
-                ROIList[r],
-                transform=ax.transAxes,
-                fontsize=8,
-                ha="center",
-                va="bottom",
-            )
-
-            renderer = fig.canvas.get_renderer()
-            bbox = text_obj.get_window_extent(renderer=renderer)
-
-            bbox_data = ax.transAxes.inverted().transform(
-                [[bbox.x0, bbox.y0], [bbox.x1, bbox.y1]]
-            )
-            text_height = bbox_data[1][1] - bbox_data[0][1]
-
-            patch_x = bbox_data[0][0] - 0.1
-            patch_y = text_y + text_height / 3
-
-            rect = mpatches.Rectangle(
-                (patch_x, patch_y),
-                0.08,
-                text_height / 2,
-                transform=ax.transAxes,
-                facecolor=cmap(r + 1),
-                edgecolor="black",
-                linewidth=0.3,
-                fill=True,
-                clip_on=False,
-            )
-            ax.add_patch(rect)
-
-            # ax.set_title(f"{ROIList[r]}", pad=1)
             ax.tick_params(axis="x", direction="in", length=2)
             ax.tick_params(axis="y", direction="in", length=2)
 
-            for fusion in [1, 4, 8, 14]:
-                ax.axvline(x=fusion, color="red", lw=0.5)
+            if m == 0:
+                ax.set_title(f"{roi[r]}")
+                for fusion in [1, 4, 8, 14]:
+                    ax.axvline(x=fusion, color="red", lw=0.5)
+            else:
+                ax.set_xticks(range(0, len(filtered_data), 2))
 
             ax.set_ylim(-0.35, 0.75)
+            ax.set_yticks(np.arange(-0.3, 0.75, 0.2))
             ax.set_xlim(0, len(filtered_data) - 1)
 
-            combinations = list(itertools.combinations(range(len(condition)), 2))
+            combinations = list(itertools.combinations(range(len(conds)), 2))
+            if not combinations:
+                combinations = [0]
             sig = np.zeros((len(combinations), len(filtered_data)))
             for count, ind in enumerate(combinations):
-                sig[count, :] = bootstraping(ttest_data[ind[0]], ttest_data[ind[1]])
+                if isinstance(ind, tuple):
+                    sig[count, :] = bootstraping(ttest_data[ind[0]], ttest_data[ind[1]])
+                else:
+                    sig[count, :] = bootstraping(ttest_data[ind])
             plot_significance(ax, sig, count)
 
             latex_conditions = [
-                r"$" + item.replace("_", r"_{") + r"}$" for item in condition
+                r"${\text{" + c.replace("_", r"}}_{") + r"}$" if "_" in c else c
+                for group in condition
+                for c in group
             ]
             h, _ = ax.get_legend_handles_labels()
-            fig.legend(
-                handles=h,
-                labels=latex_conditions,
-                ncols=2,
-                loc="lower right",
-                frameon=False,
-                columnspacing=0.8,
-                handletextpad=0.3,
-            )
+            handles.extend(h)
 
-        # fig.suptitle(datas, fontweight="bold")
-        fig.supylabel("Correlation (Kendall's Tau)", fontweight="bold")
-        plt.tight_layout(pad=0.5)
-        axes[0, 1].yaxis.set_tick_params(labelleft=True)
-        fig.supxlabel("ReLU Layers", fontweight="bold")
-        fig.subplots_adjust(bottom=0.13)
+    fig.legend(
+        handles=[handles[0], handles[1], handles[-1]],
+        labels=latex_conditions,
+        ncols=3,
+        loc="lower right",
+        frameon=False,
+        columnspacing=0.8,
+        handletextpad=0.3,
+    )
 
-        axes[0, 0].axis("off")
-        # axes[0, 0].text(
-        #     0,
-        #     1.15,
-        #     "A",
-        #     transform=axes[0, 0].transAxes,
-        #     ha="left",
-        #     va="top",
-        #     fontweight="bold",
-        # )
-        # axes[0, 1].text(
-        #     -0.15,
-        #     1.15,
-        #     "B",
-        #     transform=axes[0, 1].transAxes,
-        #     ha="left",
-        #     va="top",
-        #     fontweight="bold",
-        # )
-
-    plt.savefig(f"plot/{datas}_{hem}_{condition}.png", dpi=300, bbox_inches="tight")
+    # fig.suptitle(datas, fontweight="bold")
+    fig.supylabel("Correlation (Kendall's Tau)", fontweight="bold", ha="center")
+    fig.supxlabel("ReLU Layers", fontweight="bold")
+    plt.tight_layout(pad=0.5)
+    plt.savefig("plot/fig1.png", dpi=300, bbox_inches="tight")
 
 
 if __name__ == "__main__":
-    plt.rcParams.update(
-        {
-            "font.family": "sans-serif",
-            "font.sans-serif": ["Arial"],
-            "axes.labelsize": 8,  # Axis labels
-            "axes.titlesize": 8,  # Titles
-            "xtick.labelsize": 7,  # Tick labels
-            "ytick.labelsize": 7,  # Tick labels
-            "legend.fontsize": 7,  # Legend text
-            "figure.titlesize": 8,  # Suptitle (if used)
-            "figure.labelsize": 8,
-        }
-    )
+    init_plot()
 
-    folderr = "BMD"  # "BMD" or ""
-    dataset = ["k400"]
-    hem = "lh"
+    condition = [["S_wx", "F_wx"], ["DorsalNet"]]
+    color = [["tab:orange", "tab:blue"], ["tab:green"]]
 
-    # condition = ["S_wx", "F_wx"]
-    # color = ["tab:orange", "tab:blue"]
-
-    condition = ["S_nox", "S_wx"]
-    color = ["tab:green", "tab:orange"]
+    # condition = ["S_nox", "S_wx"]
+    # color = ["tab:green", "tab:orange"]
 
     # condition = ["S_nox", "S_1"]
     # color = ["tab:green", "tab:red"]
 
-    if folderr != "BMD":
-        folderr = ""
-        ROIList = ["V1", "pFS", "LO", "EBA", "MTSTS", "infIPS", "SMG_lh"]
-    else:
-        ROIList = ["EBA", "LOC", "STS"]
+    ROIList = ["V1", "EBA", "MTSTS", "SMG_lh"]
 
-    main(hem, color)
+    main(color, condition)

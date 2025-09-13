@@ -8,6 +8,7 @@ from sklearn.metrics import confusion_matrix
 import matplotlib.pyplot as plt
 import numpy as np
 import random
+from utils.util import load_model
 import pickle
 
 # Get the directory where the script is located
@@ -86,20 +87,18 @@ class VideoDataset(Dataset):
     def get_labels(self):
         return [label_str for _, label_str in self.samples]
 
+
 def get_feature(model_name, dataset, device):
-    if model_name == "res_r50":
-        model = torch.hub.load(
-            "facebookresearch/pytorchvideo", "slow_r50", pretrained=True
-        )
+    model = load_model(model_name)
+    if model_name == "dorsalnet":
+        layers = list(model.children())  # list of all top-level layers
+        backbone = torch.nn.Sequential(*layers[:-3]).to(device)
+    elif model_name == "res_r50":
         custom_pool = torch.nn.AvgPool3d(
             kernel_size=(8, 7, 7), stride=(1, 1, 1), padding=(0, 0, 0)
         )
         backbone = torch.nn.Sequential(*list(model.blocks[:-1]), custom_pool).to(device)
-
     else:
-        model = torch.hub.load(
-            "facebookresearch/pytorchvideo", "slowfast_r50", pretrained=True
-        )
         backbone = torch.nn.Sequential(*list(model.blocks[:-1])).to(device)
 
     backbone.eval()
@@ -132,7 +131,8 @@ def get_feature(model_name, dataset, device):
 
 
 if __name__ == "__main__":
-    model_name = "slow_r50"
+    model_name = "slowfast_r50"  # "dorsalnet", "slow_r50", "res_r50"
+    print(model_name)
     device = "cpu"  # or "cuda" if using GPU
 
     batch_size = 36

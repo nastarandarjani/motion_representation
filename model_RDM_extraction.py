@@ -6,9 +6,6 @@ import torch
 import pickle
 from tqdm import tqdm
 import torch.nn as nn
-from scipy.stats import spearmanr
-from typing import Any
-from pytorchvideo.models.hub import slowfast, r2plus1d
 from pytorchvideo.data.encoded_video import EncodedVideo
 from torchvision.transforms import Compose, Lambda
 from torchvision.transforms._transforms_video import (
@@ -20,9 +17,8 @@ from pytorchvideo.transforms import (
     ShortSideScale,
     UniformTemporalSubsample,
 )
-from sklearn.metrics.pairwise import euclidean_distances
-from DorsalNet.dorsalnet import DorsalNet
 import torch.nn.init as init
+from utils.util import load_model
 
 
 # Get the directory where the script is located
@@ -31,109 +27,6 @@ script_dir = os.path.dirname(os.path.abspath(__file__))
 os.chdir(script_dir)
 
 # Define functions
-
-def load_model(model_name, pretrained=True, dataset="k400"):
-    """
-    Load a pre-trained PyTorchVideo model.
-
-    Args:
-        model_name (str): Name of the model to load.
-        pretrained (bool): Whether to load pretrained weights.
-        dataset (str): Dataset name for loading specific weights.
-
-    Returns:
-        torch.nn.Module: Loaded pre-trained model.
-    """
-    if model_name == 'dorsalnet':
-        network = 'airsim_dorsalnet_batch2_model.ckpt-3174400-2021-02-12 02-03-29.666899.pt'
-
-        checkpoint = torch.load(
-            f"DorsalNet/{network}", map_location=torch.device("cpu")
-        )
-
-        subnet_dict = {}
-        for k, v in checkpoint.items():
-            if k.startswith("fully_connected"):
-                continue
-            if k.startswith("subnet.") or k.startswith("module."):
-                subnet_dict[k[7:]] = v
-            else:
-                subnet_dict[k] = v
-
-        model = DorsalNet(False, 32)
-        if pretrained:
-            model.load_state_dict(subnet_dict)
-    elif model_name == 'slowfast_4x16_r50':
-        def slowfast_4x16_r50(pretrained: bool = False, progress: bool = True, **kwargs: Any,) -> nn.Module:
-            return slowfast._slowfast(
-                pretrained=pretrained,
-                progress=progress,
-                checkpoint_path="https://dl.fbaipublicfiles.com/pytorchvideo/model_zoo/kinetics/SLOWFAST_4x16_R50.pyth",
-                model_depth = 50,
-                slowfast_fusion_conv_kernel_size=(5, 1, 1),
-                slowfast_fusion_conv_stride = (8, 1, 1),
-                head_pool_kernel_sizes=((4, 7, 7), (32, 7, 7)),
-                **kwargs,
-            )
-
-        model = slowfast_4x16_r50(pretrained = True)
-    elif model_name == "R2PLUS1D":
-        model = r2plus1d.r2plus1d_r50(pretrained=pretrained, progress=True)
-    elif pretrained == "cpc":
-        model = torch.hub.load(
-            "facebookresearch/pytorchvideo", model_name, pretrained=False
-        )
-        checkpoint = torch.load(
-            "../epoch_0010_best.ckpt",
-            map_location=torch.device("cpu"),
-        )
-
-        state_dict = {}
-        old_prefix = "network.backbone.model."
-        new_prefix = "blocks."
-        for key, value in checkpoint["state_dict"].items():
-            if key.startswith(old_prefix):
-                # Replace the prefix
-                new_key = new_prefix + key[len(old_prefix) :]
-            else:
-                new_key = key
-            state_dict[new_key] = value
-
-        model.load_state_dict(state_dict, strict=False)
-    elif model_name == "res_r50":
-        if dataset == "k400":
-            model = torch.hub.load(
-                "facebookresearch/pytorchvideo", "slow_r50", pretrained=pretrained
-            )
-        else:
-            model = torch.hub.load(
-                "facebookresearch/pytorchvideo", "slow_r50", pretrained=False
-            )
-            weight_path = "https://dl.fbaipublicfiles.com/pytorchvideo/model_zoo/ssv2/SLOW_8x8_R50.pyth"
-    else:
-        if dataset == "k400":
-            model = torch.hub.load(
-                "facebookresearch/pytorchvideo", model_name, pretrained=pretrained
-            )
-        else:
-            model = torch.hub.load(
-                "facebookresearch/pytorchvideo", model_name, pretrained=False
-            )
-            weight_path = "https://dl.fbaipublicfiles.com/pytorchvideo/model_zoo/ssv2/SLOWFAST_8x8_R50.pyth"
-
-            state_dict = torch.hub.load_state_dict_from_url(
-                weight_path, map_location="cuda"
-            )
-            filtered_state_dict = {
-                k: v
-                for k, v in state_dict["model_state"].items()
-                if not k.startswith("blocks.6.proj")
-            }
-            model.load_state_dict(filtered_state_dict, strict=False)
-
-    model = model.eval()
-    model = model.to("mps")
-    return model
 
 def apply_video_transform(model_name, video):
     """
@@ -403,6 +296,8 @@ if __name__ == "__main__":
 
     # Load the pre-trained model
     model = load_model(model_name, pretrained=pretrained, dataset=dataset)
+    model = model.eval()
+    model = model.to("mps")
 
     for module_name, module in model.named_modules():
         if (

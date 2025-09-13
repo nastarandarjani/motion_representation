@@ -2,3 +2,9 @@ stats.S17.maintask_perrun_REML+tlrc.BRIK
 stats.S17.maintask_perrun_REML+tlrc.HEAD
 
 flow/
+.DS_Store
+__pycache__/
+trained_models/dorsalnet/
+trained_models/generated_videos_dorsalnet.pt
+trained_models/stimuli_dorsalnet.pt
+

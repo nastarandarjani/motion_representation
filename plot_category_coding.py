@@ -1,9 +1,12 @@
+from utils.util import init_plot
 import pickle
 import numpy as np
 import os
 import matplotlib.pyplot as plt
 from scipy import stats
-from scipy.stats import kendalltau
+import matplotlib as mpl
+from utils.util import calculate_RSA
+
 
 # Get the directory where the script is located
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -11,96 +14,125 @@ script_dir = os.path.dirname(os.path.abspath(__file__))
 os.chdir(script_dir)
 
 
-def calculate_RSA(RDM1, RDM2):
-    RDM1 = RDM1[np.triu_indices(RDM1.shape[0], k=0)]
-    RDM2 = RDM2[np.triu_indices(RDM2.shape[0], k=0)]
-
-    correlation, _ = kendalltau(RDM1, RDM2)
-    return correlation
-
-
-def LOO(rdms):
+def LOO(rdms, k=1):
     correlations = []
     for i in range(len(rdms)):
         mask = np.ones(len(rdms), dtype=bool)
         mask[i] = False
 
-        correlation = calculate_RSA(rdms[i], np.mean(rdms[mask], axis=0))
+        correlation = calculate_RSA(
+            rdms[i], np.mean(rdms[mask], axis=0), k=k, bootstrap=False
+        )
         correlations.append(correlation)
 
     return np.mean(correlations), stats.sem(correlations)
 
 
 def compute_noise_ceiling(rdm_behavior_all, model_cm_all_folds):
-    # r1: behavioral reliability
-    # r1_values = LOO(np.array(rdm_behavior_all))
+    upper_bound_behavior, _ = LOO(np.array(rdm_behavior_all))
 
-    # r2: model reliability
     model_rdms = []
     for cm in model_cm_all_folds:
         rdm_model = (cm + cm.T) / 2
         rdm_model = 1 - (rdm_model / rdm_model.max())
         model_rdms.append(rdm_model)
 
-    r2_values, re = LOO(np.array(model_rdms))
+    upper_bound_model, _ = LOO(np.array(model_rdms))
 
-    return r2_values, re
+    nc = np.sqrt(upper_bound_behavior * upper_bound_model)
 
+    return nc
 
-model_names = ["slowfast_r50", "slow_r50", "res_r50"]
-RSA_means = []
-RSA_sems = []
-NC_means = []
-NC_sems = []
+if __name__ == "__main__":
+    init_plot()
+    mpl.rcParams["hatch.linewidth"] = 2.5
 
-RDM_folder = "result/fMRI RDM/pearson/behavior"
-with open(f"{RDM_folder}/S02_RDM_dynamic.pkl", "rb") as File:
-    rdm_behavior_all = pickle.load(File)
-rdm_behavior = np.mean(rdm_behavior_all, axis=0)
+    model_names = ["slowfast_r50", "slow_r50", "res_r50", "dorsalnet"]
 
-for model_name in model_names:
-    with open(f"result/confusions/{model_name}.pkl", "rb") as File:
-        cm = pickle.load(File)
+    acc_means = []
+    acc_sems = []
+    RSA_means = []
+    RSA_sems = []
+    NC_means = []
 
-    nc_avg, nc_sem = compute_noise_ceiling(rdm_behavior_all, cm)
-    NC_means.append(nc_avg)
-    NC_sems.append(nc_sem)
+    RDM_folder = "result/fMRI RDM/pearson/behavior"
+    with open(f"{RDM_folder}/S02_RDM_dynamic.pkl", "rb") as File:
+        rdm_behavior_all = pickle.load(File)
+    rdm_behavior = np.mean(rdm_behavior_all, axis=0)
 
-    rsa_all_folds = []
+    for model_name in model_names:
+        with open(f"result/confusions/{model_name}.pkl", "rb") as File:
+            cm = pickle.load(File)
 
-    for fold_cm in cm:
-        # Symmetrize and convert to RDM
-        rdm_model = (fold_cm + fold_cm.T) / 2
-        rdm_model = 1 - (rdm_model / rdm_model.max())
+        acc_all_folds = []
+        rsa_all_folds = []
 
-        rsa = calculate_RSA(rdm_behavior, rdm_model)
-        rsa_all_folds.append(rsa)
+        for fold_cm in cm:
+            acc = np.diag(fold_cm) / np.sum(fold_cm, axis=1)
+            acc = np.mean(acc)
+            acc_all_folds.append(acc)
 
-    RSA_means.append(np.mean(rsa_all_folds))
-    RSA_sems.append(stats.sem(rsa_all_folds))
+            rdm_model = (fold_cm + fold_cm.T) / 2
+            rdm_model = 1 - (rdm_model / rdm_model.max())
+            rsa = calculate_RSA(rdm_behavior, rdm_model, bootstrap=False)
+            rsa_all_folds.append(rsa)
 
-# Plotting
-fig, ax = plt.subplots()
-x = np.arange(len(model_names))
+        acc_all_folds = np.array(acc_all_folds)
 
-# Plot RSA bars
-bars = ax.bar(
-    x,
-    RSA_means,
-    yerr=RSA_sems,
-    color=["tab:green", "tab:orange", "tab:blue"],
-)
+        acc_means.append(np.mean(acc_all_folds, axis=0))
+        acc_sems.append(stats.sem(acc_all_folds, axis=0))
 
-ax.axhline(y=0, color="black")
+        nc_avg = compute_noise_ceiling(rdm_behavior_all, cm)
+        NC_means.append(nc_avg)
 
-# Plot noise ceiling
-ax.errorbar(
-    x, NC_means, yerr=NC_sems, fmt="o", color="black", label="Noise Ceiling", capsize=2
-)
+        RSA_means.append(np.mean(rsa_all_folds))
+        RSA_sems.append(stats.sem(rsa_all_folds))
 
-ax.set_ylabel("RSA (Kendall’s τ)")
-ax.set_title("Model RDM vs Behavioral RDM (Kendall’s τ)")
-ax.set_xticks(x)
-ax.set_xticklabels(["S_wx + F", "S_nox", "S_1"])
-plt.tight_layout()
-plt.savefig("plot/coding.png", dpi=300)
+    acc_means = np.array(acc_means)
+    acc_sems = np.array(acc_sems)
+
+    fig, ax = plt.subplots(1, 2, figsize=(7, 2.5))
+
+    # Plotting
+    x = np.arange(len(model_names))
+    width = 0.3
+
+    files = sorted([f for f in os.listdir("stimuli") if f.startswith("processed_")])
+    colors = ["tab:orange", "tab:red", "tab:purple", "tab:green"]
+    plt.rcParams["hatch.color"] = "tab:blue"
+    bars = ax[0].bar(x, acc_means * 100, width, yerr=acc_sems * 100, color=colors)
+    bars[0].set_hatch("///")
+
+    ax[0].axhline(y=(6 / 36) * 100, color="black", lw=0.8, ls="--")
+
+    ax[0].set_ylabel("Accuracy (Percentage)", fontweight="bold")
+    ax[0].set_title("Network Accuracy", fontweight="bold")
+    ax[0].set_xticks(x)
+
+    x = np.arange(len(model_names))
+
+    # Plot RSA bars
+    bars = ax[1].bar(x, RSA_means, width, yerr=RSA_sems, color=colors)
+    bars[0].set_hatch("///")
+
+    ax[1].axhline(y=0, color="black", lw=0.8)
+
+    # Plot noise ceiling
+    for i, nc in enumerate(NC_means):
+        ax[1].hlines(nc, i - width, i + width, colors="k", linewidth=1, color="gray")
+
+    ax[1].set_ylabel("Correlation (Kendall's Tau)", fontweight="bold")
+    ax[1].set_title("Similarity of Model and Behavioral Data", fontweight="bold")
+    ax[1].set_xticks(x)
+
+    for i in range(2):
+        for spine in ax[i].spines.values():
+            spine.set_linewidth(0.5)
+        ax[i].tick_params(axis="x", direction="in", length=2)
+        ax[i].tick_params(axis="y", direction="in", length=2)
+        ax[i].set_xticklabels(
+            [r"$\text{S}_{wx}$ + F", r"$\text{S}_{nox}$", r"$\text{S}_1$", "DorsalNet"]
+        )
+
+    plt.tight_layout(pad=0.5)
+    plt.savefig("plot/fig5.png", dpi=300, bbox_inches="tight")
