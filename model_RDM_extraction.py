@@ -231,7 +231,7 @@ def get_relu_modules(model):
     return modules
 
 
-def get_activation(model, video_inputs, layer):
+def get_activation(model, video_inputs, layer, model_name):
     """
     Get the activation from a specified layer of a pre-trained model.
 
@@ -243,7 +243,6 @@ def get_activation(model, video_inputs, layer):
     Returns:
         numpy.ndarray: Activation values as a NumPy array.
     """
-    global model_name
 
     def hook_func(model, input, output):
         nonlocal Layer_output
@@ -275,10 +274,7 @@ if __name__ == "__main__":
     status = "dynamic"  # 'dynamic'
     pretrained = True  # True, False, cpc
     random_layer = ""  # '', 'slow/', 'fast/', 'fusion/'
-    folderr = "BMD"  # "stimuli"
-
-    if folderr == "BMD":
-        folder = "/Users/nastaran/ds005165/derivatives/stimulus_set/stimuli/test/"
+    folder = "stimuli"  # "stimuli"
 
     isslow = False
     if model_name == 'slow_r50':
@@ -362,7 +358,9 @@ if __name__ == "__main__":
                 batch_videos = [i.to("mps")[None, ...] for i in batch_videos]
 
             with torch.no_grad():
-                batch_activations = get_activation(model, batch_videos, layer)
+                batch_activations = get_activation(
+                    model, batch_videos, layer, model_name
+                )
 
             activations.extend(batch_activations)
 
@@ -391,7 +389,7 @@ if __name__ == "__main__":
     pretrained = "untrained/" if not pretrained else ""
     data = f"{dataset}/" if not (dataset == "k400") else ""
     # Save the RDM dictionary to a pickle file
-    file_path = f"result/model RDM/{folderr}/{data}{is_cpc}{pretrained}{random_initialized}{status}/{random_layer}pearson_RDM_{model_name}.pkl"
+    file_path = f"result/model RDM/{folder}/{data}{is_cpc}{pretrained}{random_initialized}{status}/{random_layer}pearson_RDM_{model_name}.pkl"
     print(file_path)
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
 

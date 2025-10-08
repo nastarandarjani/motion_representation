@@ -7,7 +7,6 @@ from scipy import stats
 import matplotlib as mpl
 from utils.util import calculate_RSA
 
-
 # Get the directory where the script is located
 script_dir = os.path.dirname(os.path.abspath(__file__))
 # Change to a relative directory from the script's location
@@ -47,7 +46,14 @@ if __name__ == "__main__":
     init_plot()
     mpl.rcParams["hatch.linewidth"] = 2.5
 
-    model_names = ["slowfast_r50", "slow_r50", "res_r50", "dorsalnet"]
+    model_names = [
+        "both",
+        "slowfast_r50",
+        "fast_r50",
+        "slow_r50",
+        "res_r50",
+        "dorsalnet",
+    ]
 
     acc_means = []
     acc_sems = []
@@ -95,10 +101,17 @@ if __name__ == "__main__":
 
     # Plotting
     x = np.arange(len(model_names))
-    width = 0.3
+    width = 0.5
 
     files = sorted([f for f in os.listdir("stimuli") if f.startswith("processed_")])
-    colors = ["tab:orange", "tab:red", "tab:purple", "tab:green"]
+    colors = [
+        "tab:orange",
+        "tab:orange",
+        "tab:blue",
+        "tab:red",
+        "tab:purple",
+        "tab:green",
+    ]
     plt.rcParams["hatch.color"] = "tab:blue"
     bars = ax[0].bar(x, acc_means * 100, width, yerr=acc_sems * 100, color=colors)
     bars[0].set_hatch("///")
@@ -109,17 +122,23 @@ if __name__ == "__main__":
     ax[0].set_title("Network Accuracy", fontweight="bold")
     ax[0].set_xticks(x)
 
+    print(acc_means * 100, acc_sems * 100)
+
     x = np.arange(len(model_names))
 
     # Plot RSA bars
     bars = ax[1].bar(x, RSA_means, width, yerr=RSA_sems, color=colors)
     bars[0].set_hatch("///")
 
+    print(RSA_means, RSA_sems)
+
     ax[1].axhline(y=0, color="black", lw=0.8)
 
     # Plot noise ceiling
     for i, nc in enumerate(NC_means):
-        ax[1].hlines(nc, i - width, i + width, colors="k", linewidth=1, color="gray")
+        ax[1].hlines(
+            nc, i - width / 2, i + width / 2, colors="k", linewidth=1, color="gray"
+        )
 
     ax[1].set_ylabel("Correlation (Kendall's Tau)", fontweight="bold")
     ax[1].set_title("Similarity of Model and Behavioral Data", fontweight="bold")
@@ -131,7 +150,14 @@ if __name__ == "__main__":
         ax[i].tick_params(axis="x", direction="in", length=2)
         ax[i].tick_params(axis="y", direction="in", length=2)
         ax[i].set_xticklabels(
-            [r"$\text{S}_{wx}$ + F", r"$\text{S}_{nox}$", r"$\text{S}_1$", "DorsalNet"]
+            [
+                r"$\text{S}_{wx}$ + F",
+                r"$\text{S}_{wx}$",
+                "F",
+                r"$\text{S}_{nox}$",
+                r"$\text{S}_1$",
+                "DorsalNet",
+            ]
         )
 
     plt.tight_layout(pad=0.5)

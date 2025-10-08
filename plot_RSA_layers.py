@@ -188,16 +188,19 @@ def main(color, condition):
             ax.set_yticks(np.arange(-0.3, 0.75, 0.2))
             ax.set_xlim(0, len(filtered_data) - 1)
 
-            combinations = list(itertools.combinations(range(len(conds)), 2))
-            if not combinations:
-                combinations = [0]
-            sig = np.zeros((len(combinations), len(filtered_data)))
-            for count, ind in enumerate(combinations):
-                if isinstance(ind, tuple):
-                    sig[count, :] = bootstraping(ttest_data[ind[0]], ttest_data[ind[1]])
-                else:
-                    sig[count, :] = bootstraping(ttest_data[ind])
-            plot_significance(ax, sig, count)
+            if model_name != "dorsalnet":
+                combinations = list(itertools.combinations(range(len(conds)), 2))
+                if not combinations:
+                    combinations = [0]
+                sig = np.zeros((len(combinations), len(filtered_data)))
+                for count, ind in enumerate(combinations):
+                    if isinstance(ind, tuple):
+                        sig[count, :] = bootstraping(
+                            ttest_data[ind[0]], ttest_data[ind[1]]
+                        )
+                    else:
+                        sig[count, :] = bootstraping(ttest_data[ind])
+                plot_significance(ax, sig, count)
 
             latex_conditions = [
                 r"${\text{" + c.replace("_", r"}}_{") + r"}$" if "_" in c else c

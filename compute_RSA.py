@@ -11,7 +11,6 @@ script_dir = os.path.dirname(os.path.abspath(__file__))
 # Change to a relative directory from the script's location
 os.chdir(script_dir)
 
-
 def load_MRI(filepath, hemisphere, status):
     """
     Load data from a MAT file using the specified hemisphere identifier.

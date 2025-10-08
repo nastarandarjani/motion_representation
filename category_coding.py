@@ -57,7 +57,7 @@ def plot_confusion(all_targets, all_preds, classnames, title):
 
 class VideoDataset(Dataset):
     def __init__(self, model_name, path):
-        if model_name == "slow_r50":
+        if model_name == "slow_r50" or model_name == "fast_r50" or model_name == "both":
             self.model_name = "slowfast_r50"
         else:
             self.model_name = model_name
@@ -98,8 +98,30 @@ def get_feature(model_name, dataset, device):
             kernel_size=(8, 7, 7), stride=(1, 1, 1), padding=(0, 0, 0)
         )
         backbone = torch.nn.Sequential(*list(model.blocks[:-1]), custom_pool).to(device)
-    else:
+    elif model_name == "both":
         backbone = torch.nn.Sequential(*list(model.blocks[:-1])).to(device)
+    else:
+        layers = torch.nn.Sequential(*list(model.blocks[:-2])).to(device)
+
+        class NewNet(torch.nn.Module):
+            def __init__(self, backbone, model_name):
+                super().__init__()
+                self.backbone = backbone
+                size = 8 if "slow" in model_name else 32
+                self.avgpool = torch.nn.AvgPool3d(
+                    kernel_size=(size, 7, 7), stride=(1, 1, 1), padding=(0, 0, 0)
+                )
+
+            def forward(self, x):
+                outputs = self.backbone(x)  # backbone returns a list
+                first_out = outputs[
+                    0 if "slow" in model_name else 1
+                ]  # take the first element
+
+                out = self.avgpool(first_out)
+                return out
+
+        backbone = NewNet(layers, model_name).to(device)
 
     backbone.eval()
 
@@ -131,7 +153,7 @@ def get_feature(model_name, dataset, device):
 
 
 if __name__ == "__main__":
-    model_name = "slowfast_r50"  # "dorsalnet", "slow_r50", "res_r50"
+    model_name = "fast_r50"  # "dorsalnet", "slow_r50", "res_r50", "fast_r50", "both"
     print(model_name)
     device = "cpu"  # or "cuda" if using GPU
 

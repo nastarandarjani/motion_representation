@@ -115,6 +115,8 @@ data = np.array(data)
 cor = np.array(cor)
 data_sem = np.array(data_sem)
 
+print(cor, data, data_sem)
+
 n_groups = data.shape[0]
 n_bars = data.shape[1]
 

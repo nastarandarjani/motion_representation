@@ -87,6 +87,8 @@ def main(color):
                     lw=1,
                 )
 
+        print(region, bar, err)
+
         for spine in ax.spines.values():
             spine.set_linewidth(0.5)
 

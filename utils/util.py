@@ -182,14 +182,18 @@ def load_model(model_name, pretrained=True, dataset="k400"):
                 "facebookresearch/pytorchvideo", "slow_r50", pretrained=False
             )
             weight_path = "https://dl.fbaipublicfiles.com/pytorchvideo/model_zoo/ssv2/SLOW_8x8_R50.pyth"
-    else:
+    elif (
+        model_name == "slow_r50"
+        or model_name == "fast_r50"
+        or model_name == "slowfast_r50"
+    ):
         if dataset == "k400":
             model = torch.hub.load(
-                "facebookresearch/pytorchvideo", model_name, pretrained=pretrained
+                "facebookresearch/pytorchvideo", "slowfast_r50", pretrained=pretrained
             )
         else:
             model = torch.hub.load(
-                "facebookresearch/pytorchvideo", model_name, pretrained=False
+                "facebookresearch/pytorchvideo", "slowfast_r50", pretrained=False
             )
             weight_path = "https://dl.fbaipublicfiles.com/pytorchvideo/model_zoo/ssv2/SLOWFAST_8x8_R50.pyth"
 
