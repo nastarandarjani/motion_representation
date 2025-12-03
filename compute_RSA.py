@@ -1,10 +1,12 @@
-import pickle
-from utils.util import calculate_RSA
-from scipy.stats import spearmanr
-import scipy.io
 import os
-from tqdm import tqdm
+import pickle
+
 import numpy as np
+import scipy.io
+from scipy.stats import spearmanr
+from tqdm import tqdm
+
+from utils.util import calculate_RSA
 
 # Get the directory where the script is located
 script_dir = os.path.dirname(os.path.abspath(__file__))

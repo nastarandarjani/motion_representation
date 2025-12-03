@@ -1,14 +1,16 @@
 import itertools
+import os
 import pickle
+
+import matplotlib.patches as mpatches
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.colors import to_rgba
+from scipy.spatial import procrustes
+from sklearn.manifold import MDS
+
 from compute_RSA import calculate_RSA
 from utils.util import filter_rsa_data, init_plot
-import numpy as np
-import matplotlib.pyplot as plt
-from sklearn.manifold import MDS
-from scipy.spatial import procrustes
-import os
-from matplotlib.colors import to_rgba
-import matplotlib.patches as mpatches
 
 init_plot()
 

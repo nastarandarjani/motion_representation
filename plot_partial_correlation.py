@@ -1,10 +1,12 @@
-from scipy import stats
-import matplotlib.pyplot as plt
-import pickle
 import os
+import pickle
+
+import matplotlib.pyplot as plt
 import numpy as np
-from scipy.stats import rankdata, kendalltau
-from utils.util import filter_rsa_data, compute_noise_ceiling, init_plot
+from scipy import stats
+from scipy.stats import kendalltau, rankdata
+
+from utils.util import compute_noise_ceiling, filter_rsa_data, init_plot
 
 # Get the directory where the script is located
 script_dir = os.path.dirname(os.path.abspath(__file__))

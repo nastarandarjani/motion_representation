@@ -1,10 +1,12 @@
-import matplotlib.pyplot as plt
+import itertools
+import os
 import pickle
+
+import matplotlib.pyplot as plt
 import numpy as np
 from scipy import stats
-import os
-import itertools
-from utils.util import compute_noise_ceiling, filter_rsa_data, init_plot, bootstraping
+
+from utils.util import bootstraping, compute_noise_ceiling, filter_rsa_data, init_plot
 
 # Get the directory where the script is located
 script_dir = os.path.dirname(os.path.abspath(__file__))

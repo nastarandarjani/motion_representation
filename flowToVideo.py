@@ -1,7 +1,8 @@
-import scipy.io
-import numpy as np
 import os
+
 import cv2
+import numpy as np
+import scipy.io
 from tqdm import tqdm
 
 # Get the directory where the script is located

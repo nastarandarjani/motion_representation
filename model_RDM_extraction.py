@@ -1,25 +1,26 @@
 import os
 
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
+import pickle
+
 import numpy as np
 import torch
-import pickle
-from tqdm import tqdm
 import torch.nn as nn
+import torch.nn.init as init
 from pytorchvideo.data.encoded_video import EncodedVideo
-from torchvision.transforms import Compose, Lambda
-from torchvision.transforms._transforms_video import (
-    CenterCropVideo,
-    NormalizeVideo,
-)
 from pytorchvideo.transforms import (
     ApplyTransformToKey,
     ShortSideScale,
     UniformTemporalSubsample,
 )
-import torch.nn.init as init
-from utils.util import load_model
+from torchvision.transforms import Compose, Lambda
+from torchvision.transforms._transforms_video import (
+    CenterCropVideo,
+    NormalizeVideo,
+)
+from tqdm import tqdm
 
+from utils.util import load_model
 
 # Get the directory where the script is located
 script_dir = os.path.dirname(os.path.abspath(__file__))

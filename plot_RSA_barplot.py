@@ -1,12 +1,13 @@
-from matplotlib.patches import Rectangle
+import itertools
+import os
+
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.patches import Rectangle
 from scipy import stats
-import os
-import itertools
-from utils.util import bootstraping, filter_rsa_data, compute_noise_ceiling, init_plot
-from plot_RSA_layers import load_rsa_data
 
+from plot_RSA_layers import load_rsa_data
+from utils.util import bootstraping, compute_noise_ceiling, filter_rsa_data, init_plot
 
 # Get the directory where the script is located
 script_dir = os.path.dirname(os.path.abspath(__file__))

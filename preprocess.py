@@ -1,13 +1,11 @@
 import os
-from pytorchvideo.data.encoded_video import EncodedVideo
-from torchvision.transforms import Compose
-from pytorchvideo.transforms import (
-    ApplyTransformToKey,
-    UniformTemporalSubsample
-)
-from torchvision.io import write_video
-from PIL import Image
+
 import numpy as np
+from PIL import Image
+from pytorchvideo.data.encoded_video import EncodedVideo
+from pytorchvideo.transforms import ApplyTransformToKey, UniformTemporalSubsample
+from torchvision.io import write_video
+from torchvision.transforms import Compose
 
 # Get the directory where the script is located
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -39,17 +37,17 @@ def preprocess_video(input_folder, target_fps=30, clip_duration=3):
         if '.mp4' in filename:
             # Read the video
             video = EncodedVideo.from_path(os.path.join(input_folder, filename))
-    
+
             # Process the video as needed
             video_data = video.get_clip(start_sec=0, end_sec=clip_duration)
             video_data = transform(video_data)
             video_data = video_data["video"]
-    
+
             # Duplicate the video_data three times along the time dimension
             video_data = video_data.repeat(1, 3, 1, 1)
-    
-            output_video_path = os.path.join(input_folder, f'processed_{filename}')
-    
+
+            output_video_path = os.path.join(input_folder, f"processed_{filename}")
+
             # Save the processed video
             write_video(output_video_path, video_data.permute(1, 2, 3, 0), target_fps)
 

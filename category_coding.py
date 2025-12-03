@@ -1,15 +1,17 @@
 import os
-import torch
-from tqdm import tqdm
-from torch.utils.data import Dataset, DataLoader, TensorDataset
-from sklearn.model_selection import StratifiedKFold
-from model_RDM_extraction import process_video
-from sklearn.metrics import confusion_matrix
+import pickle
+import random
+
 import matplotlib.pyplot as plt
 import numpy as np
-import random
+import torch
+from sklearn.metrics import confusion_matrix
+from sklearn.model_selection import StratifiedKFold
+from torch.utils.data import DataLoader, Dataset, TensorDataset
+from tqdm import tqdm
+
+from model_RDM_extraction import process_video
 from utils.util import load_model
-import pickle
 
 # Get the directory where the script is located
 script_dir = os.path.dirname(os.path.abspath(__file__))

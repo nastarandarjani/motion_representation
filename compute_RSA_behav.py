@@ -1,8 +1,10 @@
 import os
 import pickle
-import scipy
+
 import numpy as np
+import scipy
 from tqdm import tqdm
+
 from utils.util import calculate_RSA
 
 # Get the directory where the script is located

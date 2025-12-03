@@ -1,11 +1,12 @@
-from utils.util import init_plot
-import pickle
-import numpy as np
 import os
-import matplotlib.pyplot as plt
-from scipy import stats
+import pickle
+
 import matplotlib as mpl
-from utils.util import calculate_RSA
+import matplotlib.pyplot as plt
+import numpy as np
+from scipy import stats
+
+from utils.util import calculate_RSA, init_plot
 
 # Get the directory where the script is located
 script_dir = os.path.dirname(os.path.abspath(__file__))

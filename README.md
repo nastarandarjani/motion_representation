@@ -85,7 +85,6 @@ motion_representation/
 - `pretrained`: Specify whether to use pretrained weights (True, False, 'cpc').
 - `random_layer`: Specify the random layer (e.g., '', 'slow/', 'fast/', 'fusion/').
 
-
 ### `compute_RSA.py`
 
 - `models`: List of model names to be used for RSA (e.g., ["slowfast_r50", "slow_r50"]).
@@ -102,6 +101,7 @@ motion_representation/
 ### Extracting RDMs from Models
 
 To extract RDMs from models, run the `model_RDM_extraction.py` script:
+
 ```sh
 python model_RDM_extraction.py
 ```
@@ -109,6 +109,7 @@ python model_RDM_extraction.py
 ### Extracting RDMs from ImageNet Models
 
 To extract RDMs from ImageNet models, run the `ImagenetModel_RDM_extraction.py` script:
+
 ```sh
 python ImagenetModel_RDM_extraction.py
 ```
@@ -116,6 +117,7 @@ python ImagenetModel_RDM_extraction.py
 ### Performing RSA
 
 To perform RSA on fMRI data and behavioral dissimilarity data, run the `compute_RSA.py` script:
+
 ```sh
 python compute_RSA.py
 ```
