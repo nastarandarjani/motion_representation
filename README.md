@@ -1,123 +1,114 @@
 # Motion Representation Analysis
 
-This repository contains scripts and data for performing Representational Similarity Analysis (RSA) between fMRI data and behavioral dissimilarity data with model netwroks. The analysis includes calculating Representational Dissimilarity Matrices (RDMs) for different brain regions and comparing them with model RDMs.
+This repository contains analysis and modeling code for studying how **motion-based representations** in **artificial neural networks (ANNs)** relate to **human brain activity** during dynamic visual perception. We compare layer-wise representations from video models to fMRI responses using representational similarity analysis (RSA), and evaluate their behavioral relevance.
 
-## Project Structure
+> **Results produced using this code have been published in:**  
+> ...
+
+## Getting Started
+
+### 1. Environment Setup
+
+*(Optional but recommended)* Create and activate a Conda environment:
 
 ```bash
-motion_representation/
-├── DorsalNet
-│   └── # Contains the DorsalNet model implementation.
-├── misc
-│   └── # Miscellaneous files and scripts.
-├── plot
-│   ├── RSA
-│   ├── charades
-│   ├── cpc
-│   ├── fast
-│   ├── fusion
-│   ├── imagenet
-│   ├── slow
-│   ├── ssv2
-│   └── untrained
-│       └── # Contains plots for different models and datasets.
-├── result
-│   ├── RSA
-│   │   ├── charades
-│   │   ├── cpc
-│   │   ├── dorsalnet
-│   │   ├── imagenet
-│   │   ├── random
-│   │   ├── slow_r50
-│   │   ├── slowfast_r50
-│   │   ├── ssv2
-│   │   └── untrained
-│       └── # Contains RSA results for different models and datasets.
-│   ├── fMRI RDM
-│   │   ├── pearson
-│   │   └── spearman
-│       └── # Contains fMRI RDM results using different correlation methods.
-│   └── model RDM
-│       ├── charades
-│       ├── cpc
-│       ├── dynamic
-│       ├── imagenet
-│       ├── random
-│       ├── ssv2
-│       └── untrained
-│           └── # Contains model RDM results for different models and datasets.
-├── stimuli
-│   └── # Contains stimuli videos and images.
-├── video
-│   └── # Contains sample transformed videos of each model.
-├── ImagenetModel_RDM_extraction.py
-├── README.md
-├── compute_RSA.py
-├── dissimilarity_img2.csv
-├── dissimilarity_vid2.csv
-├── model_RDM_extraction.py
-├── plot_MDS_max.py
-├── plot_RDMs_max.py
-├── plot_RSA_layers.py
-└── preprocess.py
+conda create -n motionrep python=3.10 -y
+conda activate motionrep
+pip install -r requirements.txt
 ```
 
-- `ImagenetModel_RDM_extraction.py`: Script for extracting RDMs from ImageNet models.
-- `compute_RSA.py`: Script for retrieving RDMs form fMRI data and behavioral dissimilarity data and performing RSA between these RDMs and model RDMs.
-- `model_RDM_extraction.py`: Script for extracting RDMs from models.
-- `plot_MDS_max.py`: Script for plotting maximum RSA layer's MDS.
-- `plot_RDMs_max.py`: Script for plotting maximum RSA layer's RDMs.
-- `plot_RSA_layers.py`: Script for plotting RSA layers.
-- `preprocess.py`: Script for preprocessing data.
+### 2. Stimulus Preprocessing
 
-## Parameters
+Prepare videos/images for model input:
 
-### `ImagenetModel_RDM_extraction.py`
-
-- `model_name`: Specify the desired model name (e.g., 'AlexNet', 'ResNet50', 'DenseNet121', 'VGG16').
-- `status`: Specify the status (e.g., 'dynamic', 'static').
-
-### `model_RDM_extraction.py`
-
-- `model_name`: Specify the desired model name (e.g., 'slowfast_r50', 'x3d_m', 'slow_r50', 'dorsalnet').
-- `dataset`: Specify the dataset name (e.g., 'k400', 'ssv2', 'charades').
-- `status`: Specify the status (e.g., 'dynamic', 'static').
-- `pretrained`: Specify whether to use pretrained weights (True, False, 'cpc').
-- `random_layer`: Specify the random layer (e.g., '', 'slow/', 'fast/', 'fusion/').
-
-### `compute_RSA.py`
-
-- `models`: List of model names to be used for RSA (e.g., ["slowfast_r50", "slow_r50"]).
-- `dataset`: Name of the dataset (e.g., 'charades').
-- `pretrained`: Flag indicating whether the models are pretrained (True, False, 'cpc').
-- `random_layer`: Path to the random layer (e.g., 'fusion/').
-- `isimagenet`: Flag indicating whether the dataset is ImageNet (True, False).
-- `correlation_types`: List of correlation types to be used for RSA (e.g., ["pearson"]).
-- `ROIList`: List of regions of interest (e.g., ["V1", "pFS", "LO", "EBA", "MTSTS", "infIPS", "SMG", "behavior"]).
-- `hemispheres`: List of hemispheres to be analyzed (e.g., ["all"]).
-
-## Usage
-
-### Extracting RDMs from Models
-
-To extract RDMs from models, run the `model_RDM_extraction.py` script:
-
-```sh
-python model_RDM_extraction.py
+```bash
+python preprocess.py
 ```
 
-### Extracting RDMs from ImageNet Models
+Assumes raw stimuli are located in `stimuli/` and saves resized/converted files with the prefix `processed` in the same folder
 
-To extract RDMs from ImageNet models, run the `ImagenetModel_RDM_extraction.py` script:
+### 3. Optical Flow Stimuli
 
-```sh
-python ImagenetModel_RDM_extraction.py
+Download optical-flow stimuli (`*.mat`) from the **Manuscript Stimuli** directory hosted on OSF:
+
+🔗  <https://osf.io/45b8y/>
+
+Convert the `.mat` flow data into videos using:
+
+```bash
+python flowToVideo.py
 ```
 
-### Performing RSA
+Generated videos are saved to `generated_videos/`. Run [`preprocess.py`](preprocess.py) afterward to ensure consistent stimulus dimensions
 
-To perform RSA on fMRI data and behavioral dissimilarity data, run the `compute_RSA.py` script:
+## Analyses
 
-```sh
-python compute_RSA.py
+### Brain–Model Representational Similarity
+
+Compare layer-wise model representations with fMRI activity patterns from visual ROIs.
+
+- [`model_RDM_extraction.py`](model_RDM_extraction.py) — Extracts model RDMs
+- [`compute_RSA.py`](compute_RSA.py) — Computes RSA with fMRI RDMs
+- [`plot_RSA_layers.py`](plot_RSA_layers.py) — Layer-wise RSA plots across brain regions
+
+**Partial Correlation RSA**
+
+Isolate unique explanatory power of each model:
+
+- [`plot_partial_correlation.py`](plot_partial_correlation.py)
+
+___
+
+### Multi-Scale Temporal Integration
+
+Evaluate how different temporal pathways and cross-pathway interactions contribute to motion representations.
+
+- [`plot_RSA_barplot.py`](plot_RSA_barplot.py) — Summary RSA bar plots per region
+
+___
+
+### Representational Geometry
+
+Visualize alignment between neural and model representational spaces.
+
+- [`plot_MDS.py`](plot_MDS.py) — Multidimensional scaling (MDS) of RDMs
+
+___
+
+### Behavioral Relevance
+
+Relate motion-based model representations to behavioral object categorization and discrimination.
+
+- [`behav_RDM_extraction.py`](behav_RDM_extraction.py) — Behavioral RDMs from dissimilarity judgments
+- [`category_coding.py`](category_coding.py) — Category classifiers trained on generated motion stimuli
+- [`plot_category_coding.py`](plot_category_coding.py) — Classification accuracy and RSA–behavior plots
+  
+## Repository Structure
+
+```bash
+.
+├─ preprocess.py
+├─ model_RDM_extraction.py
+├─ compute_RSA.py
+├─ plot_RSA_layers.py
+├─ plot_partial_correlation.py
+├─ plot_RSA_barplot.py
+├─ plot_MDS.py
+├─ behav_RDM_extraction.py
+├─ category_coding.py
+├─ plot_category_coding.py
+├─ flowToVideo.py
+│
+├─ DorsalNet/                 # DorsalNet implementation and pretrained weights
+├─ fMRI/                      # Per-subject fMRI RDMs and ROI data
+│  └─ S02/ S03/ ... S17/
+├─ stimuli/                   # Raw and processed stimuli
+├─ generated_videos/          # Flow-based video stimuli
+├─ trained_models/            # Saved classifier/model checkpoints
+├─ result/                    # RSA outputs, RDMs, confusion matrices
+├─ plot/                      # Figures generated by analyses
+├─ utils/                     # Common helper functions (I/O, plotting, metrics)
+└─ misc/                      # Archived scripts and notebooks
 ```
+
+## Notes

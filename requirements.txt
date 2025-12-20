@@ -1,0 +1,23 @@
+# Minimal Python dependencies for motion_representation
+# Adjust versions for your environment (CUDA, macOS MPS, etc.)
+
+numpy>=1.21
+scipy>=1.7
+matplotlib>=3.4
+tqdm>=4.60
+pillow>=8.0
+
+# PyTorch and ecosystem
+torch>=1.12  # or install the appropriate build for your CUDA/MPS
+torchvision>=0.13
+pytorchvideo>=0.1.5
+
+# Analysis / stats
+mne>=1.0
+scikit-learn>=1.0
+
+# I/O
+h5py>=3.1
+
+# Optional (used by some helper scripts)
+pickle5; python_version < '3.8'
