@@ -139,14 +139,16 @@ def filter_RDM(RDM, mode):
 
 if __name__ == "__main__":
     # List of models, correlation types, regions of interest, and hemispheres
-    models = ["slow_r50", "slowfast_r50", "res_r50"]  # , 'slow_r50', 'dorsalnet']
+    models = [
+        "vjepa_fpc16"
+    ]  # , 'slow_r50', 'dorsalnet', 'vjepa_fpc16', 'videomae', 'vjepa_fpc64']
     dataset = "k400"
     status = "dynamic"
     pretrained = True
     random_layer = ""  #'fusion/'
     isimagenet = False
     correlation_types = ["pearson"]
-    folder = "BMD"  # ""
+    folder = ""  # ""
     ROIList = ["V1", "pFS", "LO", "EBA", "MTSTS", "infIPS", "SMG"]
     hemispheres = ["all", "rh", "lh"]
     names = {"": [""]}  # , '_anim' : ['_animate', '_inanimate']}

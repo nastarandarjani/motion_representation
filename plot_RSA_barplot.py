@@ -14,7 +14,7 @@ script_dir = os.path.dirname(os.path.abspath(__file__))
 # Change to a relative directory from the script's location
 os.chdir(script_dir)
 
-ROIList = ["V1", "EBA", "MTSTS", "SMG_lh"]
+ROIList = ["V1", "EBA", "SMG_lh"]
 status = "dynamic"
 
 
@@ -55,8 +55,8 @@ def main(color):
 
             filtered_data = data[:, indices]
             ttest_data.append(filtered_data)
-            SEM = stats.sem(filtered_data[:, 12], axis=0)
-            filtered_data = np.mean(filtered_data[:, 12], axis=0)
+            SEM = stats.sem(filtered_data[:, 10], axis=0)
+            filtered_data = np.mean(filtered_data[:, 10], axis=0)
 
             bar[c] = filtered_data
             err[c] = SEM
@@ -102,7 +102,8 @@ def main(color):
         y_pre = np.zeros((len(condition)))
         for count, ind in enumerate(combinations):
             significant_layers = bootstraping(ttest_data[ind[0]], ttest_data[ind[1]])
-            if significant_layers[12] > 0:
+            print(ind, significant_layers)
+            if significant_layers[10] > 0:
                 x1 = br[r] + barWidth * ind[0]
                 x2 = br[r] + barWidth * ind[1]
                 y1 = bar[ind[0]] + err[ind[0]]
@@ -132,13 +133,13 @@ def main(color):
                 for i in range(ind[0], ind[1] + 1):
                     y_pre[i] = y[1]
 
-        if region == "MTSTS":
+        if region == "EBA":
             ROIList[r] = "${\\text{LOT}}_{bio}$"
 
     ax.set_xticks(br + barWidth)
     ax.set_xticklabels(ROIList)
 
-    ax.set_xlim(0 - barWidth, 4)
+    ax.set_xlim(0 - barWidth, len(ROIList))
     ax.set_ylim(-0.21, 0.71)
 
     latex_conditions = [

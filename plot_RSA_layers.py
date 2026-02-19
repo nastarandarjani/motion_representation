@@ -120,7 +120,7 @@ def main(color, condition):
                 elif cond == "S_1":
                     model_name = "res_r50"
                 else:
-                    model_name = "dorsalnet"
+                    model_name = cond
                 data, RSA = load_rsa_data(region, model_name, hem)
                 filtered_list = filter_rsa_data(RSA, cond)
 
@@ -179,7 +179,7 @@ def main(color, condition):
             ax.tick_params(axis="x", direction="in", length=2)
             ax.tick_params(axis="y", direction="in", length=2)
 
-            if m == 0:
+            if len(conds) > 1:  # SlowFast plot
                 ax.set_title(f"{roi[r]}")
                 for fusion in [1, 4, 8, 14]:
                     ax.axvline(x=fusion, color="red", lw=0.5)
@@ -241,6 +241,6 @@ if __name__ == "__main__":
     # condition = ["S_nox", "S_1"]
     # color = ["tab:green", "tab:red"]
 
-    ROIList = ["V1", "EBA", "MTSTS", "SMG_lh"]
+    ROIList = ["V1", "MTSTS", "SMG_lh"]
 
     main(color, condition)

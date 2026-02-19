@@ -30,7 +30,7 @@ def partial_corr(y, x1, x2, rank_transform=True):
 
 
 init_plot()
-ROIList = ["V1", "EBA", "MTSTS", "SMG_lh"]
+ROIList = ["V1", "MTSTS", "SMG_lh"]
 
 RDM_folder = "result/model RDM/dynamic"
 with open(f"{RDM_folder}/pearson_RDM_slowfast_r50.pkl", "rb") as File:
@@ -49,7 +49,7 @@ filtered_list = filter_rsa_data(slowfast_model, "S_wx")
 indices = [i for i, key in enumerate(slowfast_model.keys()) if key in filtered_list]
 slowfast_model = np.array(list(slowfast_model.values()))[indices, :]
 
-filtered_list = filter_rsa_data(dorsalnet_model, "dorsalnet")
+filtered_list = filter_rsa_data(dorsalnet_model)
 indices = [i for i, key in enumerate(dorsalnet_model.keys()) if key in filtered_list]
 dorsalnet_model = np.array(list(dorsalnet_model.values()))[indices, :]
 

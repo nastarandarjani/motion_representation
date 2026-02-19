@@ -1,14 +1,16 @@
-import numpy as np
-from scipy.stats import kendalltau
 import pickle
-from scipy import stats
-import torch
-from DorsalNet.dorsalnet import DorsalNet
-from pytorchvideo.models.hub import slowfast, r2plus1d
 from typing import Any
-import torch.nn as nn
+
 import matplotlib.pyplot as plt
+import numpy as np
+import torch
+import torch.nn as nn
 from mne.stats import permutation_cluster_test
+from pytorchvideo.models.hub import r2plus1d, slowfast
+from scipy import stats
+from scipy.stats import kendalltau
+
+from DorsalNet.dorsalnet import DorsalNet
 
 
 def calculate_RSA(RDM1, RDM2, k=1, bootstrap=True):
@@ -69,7 +71,7 @@ def compute_noise_ceiling(region, hem):
     return np.mean(correlations), stats.sem(correlations)
 
 
-def filter_rsa_data(RSA, cond):
+def filter_rsa_data(RSA, cond=None):
     def is_valid_key(key):
         return "act_a" not in key and "act_b" not in key
 
@@ -91,10 +93,10 @@ def filter_rsa_data(RSA, cond):
             for key in RSA.keys()
             if "multipathway_fusion" in key and is_valid_key(key)
         ]
-    elif "dorsal" in cond:
-        return RSA.keys()
+    elif cond == "S_1":
+        return [key for key in RSA.keys() if is_valid_key(key)]
 
-    return [key for key in RSA.keys() if is_valid_key(key)]
+    return RSA.keys()
 
 
 def load_model(model_name, pretrained=True, dataset="k400"):
@@ -130,6 +132,10 @@ def load_model(model_name, pretrained=True, dataset="k400"):
         model = DorsalNet(False, 32)
         if pretrained:
             model.load_state_dict(subnet_dict)
+    elif model_name == "vjepa_v2":
+        model = torch.hub.load(
+            "facebookresearch/vjepa", "vjepa_v2_vit_large", pretrained=pretrained
+        )
     elif model_name == "slowfast_4x16_r50":
 
         def slowfast_4x16_r50(
@@ -241,7 +247,7 @@ def bootstraping(data_A, data_B=0):
         tail=int(oneside),
         stat_fun=my_statistic,
         out_type="mask",
-        threshold=0.1 if oneside else 0.05,
+        threshold=0.1,
         verbose=False,
     )
 

@@ -16,7 +16,7 @@ init_plot()
 
 ROIList = ["V1", "EBA", "MTSTS", "SMG_lh"]
 roi = ["V1", "EBA", "${\\text{LOT}}_{bio}$", "${\\text{SMG}}_{lh}$"]
-condition = ["F_wx", "S_wx", "S_nox", "S_1", "Dorsal"]
+condition = ["F_wx", "S_wx", "S_nox", "S_1", "dorsal"]
 conds = ["F$_{wx}$", "S$_{wx}$", "S$_{nox}$", "S$_1$", "Dorsal"]
 
 if os.path.exists("mds.npy"):
@@ -57,10 +57,10 @@ else:
             model_name = "slowfast_r50"
         elif cond == "S_nox":
             model_name = "slow_r50"
-        elif cond == "dorsal":
-            model_name = "dorsalnet"
-        else:
+        elif cond == "S_1":
             model_name = "res_r50"
+        else:
+            model_name = "dorsalnet"
 
         model_path = f"result/model RDM/dynamic/pearson_RDM_{model_name}.pkl"
         with open(model_path, "rb") as pickle_file:
@@ -74,7 +74,7 @@ else:
         if "dorsal" in model_name:
             model_RDM = model_RDM[2, :, :]
         else:
-            model_RDM = model_RDM[12, :, :]
+            model_RDM = model_RDM[10, :, :]
 
         model_RDMs[c, :, :] = model_RDM
 
@@ -111,18 +111,17 @@ else:
     np.save("mds.npy", aligned)
 
 
-theta = np.pi
+theta = np.pi / 2
 R = np.array([[np.cos(theta), -np.sin(theta)], [np.sin(theta), np.cos(theta)]])
 
 # apply rotation across last dimension
 aligned = aligned @ R.T  # shape (15, 9, 2)
 
-
 coords_mean = np.mean(aligned, axis=0)
 
 fig = plt.figure(figsize=(7 / 2, 4))
 
-colors = ["tab:pink", "tab:gray", "tab:olive", "tab:cyan"]
+colors = ["tab:pink", "tab:blue", "tab:olive", "tab:cyan"]
 
 for subj_coords in aligned:
     for i in range(len(ROIList + condition)):
@@ -180,11 +179,12 @@ handles = [mpatches.Patch(facecolor=colors[i], label=roi[i]) for i in range(len(
 plt.legend(
     handles,
     roi,
-    ncols=4,
+    ncols=3,
     loc="lower center",
     frameon=False,
     bbox_to_anchor=(0.5, -0.05),
     columnspacing=0.8,
     handletextpad=0.3,
 )
-plt.savefig("plot/fig4.png", dpi=300, bbox_inches="tight")
+# plt.savefig("plot/fig4.png", dpi=300, bbox_inches="tight")
+plt.show()
